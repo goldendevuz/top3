@@ -12,6 +12,7 @@ import { useBoardStore } from './store/useBoardStore';
 import DailyBoard from './components/DailyBoard';
 import Profile from './components/Profile';
 import Categories from './components/Categories';
+import { useAuthStore } from './store/useAuthStore';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "your_google_client_id_here";
 
@@ -173,10 +174,31 @@ const ProfilePage = () => (
 /* ─── APP ─── */
 function App() {
   const fetchDomains = useBoardStore(state => state.fetchDomains);
+  const storeLogin = useAuthStore(state => state.login);
 
   useEffect(() => {
     fetchDomains();
   }, [fetchDomains]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userStr = params.get('user');
+    
+    if (token) {
+      let userObj = null;
+      if (userStr) {
+        try {
+          userObj = JSON.parse(decodeURIComponent(userStr));
+        } catch (e) {
+          console.error("Failed to parse user from URL", e);
+        }
+      }
+      
+      storeLogin(userObj || ({} as any), token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [storeLogin]);
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

@@ -20,7 +20,7 @@ const Hero = () => {
   return (
     <section className="hero">
       <div className="wrap hero-grid">
-        <div>
+        <div className="flex flex-col items-center text-center">
           <LiveAnalytics />
           <span className="eyebrow"><span className="dot"></span> .uz saytlari uchun reyting</span>
           <h1>Pul to'lang — <em>tepaga</em> chiqing.<br/>O'zbekistonning har bir sayti bitta ro'yxatda.</h1>
