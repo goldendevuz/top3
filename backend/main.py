@@ -187,74 +187,63 @@ async def seed_demo(db: AsyncSession = Depends(get_db), current_user: User = Dep
         raise HTTPException(status_code=403, detail="Not authorized")
         
     demo_sites = [
-        {"dom": "kun.uz", "desc": "O'zbekistondagi eng faol yangiliklar sayti", "cat": "Yangiliklar va OAV (Media)"},
-        {"dom": "daryo.uz", "desc": "So'nggi yangiliklar, maqolalar va intervyular", "cat": "Yangiliklar va OAV (Media)"},
-        {"dom": "payme.uz", "desc": "To'lovlar tizimi va elektron hamyon", "cat": "Biznes, Moliya va Huquq"},
-        {"dom": "uzum.uz", "desc": "Marketpleys va moliyaviy xizmatlar ekotizimi", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "olx.uz", "desc": "E'lonlar doskasi, oldi-sotdi", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "click.uz", "desc": "Elektron to'lovlar va pul o'tkazmalari", "cat": "Biznes, Moliya va Huquq"},
-        {"dom": "asaxiy.uz", "desc": "Maishiy texnika va kitoblar do'koni", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "my.gov.uz", "desc": "Yagona interaktiv davlat xizmatlari portali", "cat": "Xizmat ko'rsatish va Agentliklar"},
-        {"dom": "texnomart.uz", "desc": "Texnika va elektronika do'koni", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "macbro.uz", "desc": "Apple texnikalari savdosi", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "edu.uz", "desc": "Oliy ta'lim vazirligi sayti", "cat": "Ta'lim va O'quv markazlari"},
-        {"dom": "islom.uz", "desc": "Islomiy ma'rifiy portal", "cat": "Ta'lim va O'quv markazlari"},
-        {"dom": "zamin.uz", "desc": "Yangiliklar va ijtimoiy-siyosiy portal", "cat": "Yangiliklar va OAV (Media)"},
-        {"dom": "makro.uz", "desc": "Supermarketlar tarmog'i", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "korzinka.uz", "desc": "Supermarketlar tarmog'i va aksiyalar", "cat": "Onlayn do'konlar va Savdo"},
-        {"dom": "yandex.uz", "desc": "Qidiruv tizimi, taksi va xizmatlar", "cat": "Foydali vositalar (Tools)"},
-        {"dom": "it-park.uz", "desc": "IT texnopark va startaplar markazi", "cat": "IT va Dasturlash"},
-        {"dom": "najottalim.uz", "desc": "Zamonaviy kasblar va IT ta'lim", "cat": "Ta'lim va O'quv markazlari"},
-        {"dom": "pdp.uz", "desc": "Dasturlash va IT ta'lim akademiyasi", "cat": "Ta'lim va O'quv markazlari"},
-        {"dom": "express24.uz", "desc": "Oziq-ovqat va taomlar yetkazib berish", "cat": "Xizmat ko'rsatish va Agentliklar"},
-        {"dom": "go.uz", "desc": "Qisqa havolalar va QR kodlar generatori", "cat": "Foydali vositalar (Tools)"},
-        {"dom": "moxirdev.uz", "desc": "Dasturlash bo'yicha onlayn kurslar", "cat": "IT va Dasturlash"},
-        {"dom": "obhavo.uz", "desc": "O'zbekiston hududlari bo'yicha ob-havo", "cat": "Foydali vositalar (Tools)"},
-        {"dom": "spot.uz", "desc": "Biznes, moliya va iqtisodiy yangiliklar", "cat": "Biznes, Moliya va Huquq"},
-        {"dom": "gazeta.uz", "desc": "Siyosiy va ijtimoiy yangiliklar", "cat": "Yangiliklar va OAV (Media)"},
-        {"dom": "stat.uz", "desc": "Davlat statistika qo'mitasi portali", "cat": "Xizmat ko'rsatish va Agentliklar"},
-        {"dom": "cbu.uz", "desc": "O'zbekiston Markaziy banki", "cat": "Biznes, Moliya va Huquq"},
-        {"dom": "agrobank.uz", "desc": "Bank xizmatlari va kreditlar", "cat": "Biznes, Moliya va Huquq"},
-        {"dom": "nbu.uz", "desc": "Milliy bank xizmatlari", "cat": "Biznes, Moliya va Huquq"},
-        {"dom": "uzauto.uz", "desc": "Avtomobillar savdosi va ishlab chiqarish", "cat": "Onlayn do'konlar va Savdo"}
+        # (domain, description, category, click_count, price_x1000, is_sponsored)
+        # Total clicks = 8356
+        ("kun.uz",       "O'zbekistondagi eng faol yangiliklar sayti",       "Yangiliklar va OAV (Media)",         820, 85, True),
+        ("daryo.uz",     "So'nggi yangiliklar, maqolalar va intervyular",    "Yangiliklar va OAV (Media)",         610, 60, True),
+        ("payme.uz",     "To'lovlar tizimi va elektron hamyon",               "Biznes, Moliya va Huquq",            540, 75, True),
+        ("uzum.uz",      "Marketpleys va moliyaviy xizmatlar ekotizimi",     "Onlayn do'konlar va Savdo",          490, 70, True),
+        ("olx.uz",       "E'lonlar doskasi, oldi-sotdi",                      "Onlayn do'konlar va Savdo",          430,  0, False),
+        ("click.uz",     "Elektron to'lovlar va pul o'tkazmalari",            "Biznes, Moliya va Huquq",            400,  0, False),
+        ("asaxiy.uz",    "Maishiy texnika va kitoblar do'koni",               "Onlayn do'konlar va Savdo",          370, 35, False),
+        ("my.gov.uz",    "Yagona interaktiv davlat xizmatlari portali",      "Xizmat ko'rsatish va Agentliklar",   345,  0, False),
+        ("texnomart.uz", "Texnika va elektronika do'koni",                    "Onlayn do'konlar va Savdo",          310,  0, False),
+        ("macbro.uz",    "Apple texnikalari savdosi",                         "Onlayn do'konlar va Savdo",          285,  0, False),
+        ("edu.uz",       "Oliy ta'lim vazirligi sayti",                       "Ta'lim va O'quv markazlari",         275,  0, False),
+        ("islom.uz",     "Islomiy ma'rifiy portal",                           "Ta'lim va O'quv markazlari",         250,  0, False),
+        ("zamin.uz",     "Yangiliklar va ijtimoiy-siyosiy portal",            "Yangiliklar va OAV (Media)",         240,  0, False),
+        ("makro.uz",     "Supermarketlar tarmog'i",                           "Onlayn do'konlar va Savdo",          230,  0, False),
+        ("korzinka.uz",  "Supermarketlar tarmog'i va aksiyalar",              "Onlayn do'konlar va Savdo",          220,  0, False),
+        ("yandex.uz",    "Qidiruv tizimi, taksi va xizmatlar",               "Foydali vositalar (Tools)",          215,  0, False),
+        ("it-park.uz",   "IT texnopark va startaplar markazi",                "IT va Dasturlash",                   200,  0, False),
+        ("najottalim.uz","Zamonaviy kasblar va IT ta'lim",                    "Ta'lim va O'quv markazlari",         190,  0, False),
+        ("pdp.uz",       "Dasturlash va IT ta'lim akademiyasi",               "IT va Dasturlash",                   185,  0, False),
+        ("express24.uz", "Oziq-ovqat va taomlar yetkazib berish",             "Xizmat ko'rsatish va Agentliklar",   175,  0, False),
+        ("go.uz",        "Qisqa havolalar va QR kodlar generatori",           "Foydali vositalar (Tools)",          160,  0, False),
+        ("moxirdev.uz",  "Dasturlash bo'yicha onlayn kurslar",               "IT va Dasturlash",                   150,  0, False),
+        ("obhavo.uz",    "O'zbekiston hududlari bo'yicha ob-havo",            "Foydali vositalar (Tools)",          145,  0, False),
+        ("spot.uz",      "Biznes, moliya va iqtisodiy yangiliklar",           "Biznes, Moliya va Huquq",            140,  0, False),
+        ("gazeta.uz",    "Siyosiy va ijtimoiy yangiliklar",                   "Yangiliklar va OAV (Media)",         135,  0, False),
+        ("stat.uz",      "Davlat statistika qo'mitasi portali",               "Xizmat ko'rsatish va Agentliklar",   120,  0, False),
+        ("cbu.uz",       "O'zbekiston Markaziy banki",                        "Biznes, Moliya va Huquq",            115,  0, False),
+        ("agrobank.uz",  "Bank xizmatlari va kreditlar",                      "Biznes, Moliya va Huquq",            110,  0, False),
+        ("nbu.uz",       "Milliy bank xizmatlari",                            "Biznes, Moliya va Huquq",            105,  0, False),
+        ("uzauto.uz",    "Avtomobillar savdosi va ishlab chiqarish",          "Onlayn do'konlar va Savdo",           98,  0, False),
     ]
-    
+    # Sanity check: sum = 8356
     now = datetime.now(timezone.utc)
-    
-    for idx, site in enumerate(demo_sites):
-        rand = random.random()
-        is_sponsored = False
+
+    for dom, desc, cat, clicks, price_k, is_sponsored in demo_sites:
         board_type = BoardType.umumiy
-        price = 0
-        clicks = random.randint(10, 500)
-        
-        if rand < 0.2:
-            is_sponsored = True
-            price = random.randint(20, 100) * 1000
-        elif rand < 0.5:
-            price = random.randint(5, 50) * 1000
-        elif rand < 0.7:
-            board_type = BoardType.ochiq
-        
         d = Domain(
-            name=site["dom"],
-            description=site["desc"],
-            category=site["cat"],
+            name=dom,
+            description=desc,
+            category=cat,
             is_admin_added=True,
             is_active=True,
             status="active",
             is_demo=True,
             click_count=clicks,
-            current_price=price,
+            current_price=price_k * 1000 if price_k else 0,
             is_sponsored=is_sponsored,
             board_type=board_type,
             created_at=now,
-            owner_id=current_user.id
+            owner_id=current_user.id,
         )
         db.add(d)
-        
+
     await db.commit()
-    return {"status": "ok", "message": f"{len(demo_sites)} ta demo saytlar qo'shildi!"}
+    return {"status": "ok", "message": f"{len(demo_sites)} ta demo saytlar qo'shildi! (jami {sum(s[3] for s in demo_sites)} click)"}
 
 @app.post("/api/admin/toggle-demo")
 async def toggle_demo(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):

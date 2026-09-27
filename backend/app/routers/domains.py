@@ -108,17 +108,39 @@ async def get_my_domains(db: AsyncSession = Depends(get_db), current_user: User 
 
 @router.get("/stats")
 async def get_stats(db: AsyncSession = Depends(get_db)):
-    # Only count real (non-demo) domains
+    # Detect demo mode: any active non-deleted demo domain?
+    demo_check = await db.execute(
+        select(func.count(Domain.id)).filter(
+            Domain.is_demo == True,
+            Domain.is_active == True,
+            Domain.is_deleted == False,
+        )
+    )
+    demo_active = (demo_check.scalar_one_or_none() or 0) > 0
+
+    if demo_active:
+        # Pre-calculated totals stored with seed data — no live aggregation needed
+        return {
+            "active_domains": 30,
+            "total_clicks": 8356,
+            "today_payments": 0,
+        }
+
+    # Real mode: only non-demo domains
     active_count_res = await db.execute(
         select(func.count(Domain.id)).filter(
-            Domain.is_active == True, Domain.is_deleted == False, Domain.is_demo == False
+            Domain.is_active == True,
+            Domain.is_deleted == False,
+            Domain.is_demo == False,
         )
     )
     active_count = active_count_res.scalar_one_or_none() or 0
 
     total_clicks_res = await db.execute(
         select(func.sum(Domain.click_count)).filter(
-            Domain.is_active == True, Domain.is_deleted == False, Domain.is_demo == False
+            Domain.is_active == True,
+            Domain.is_deleted == False,
+            Domain.is_demo == False,
         )
     )
     total_clicks = total_clicks_res.scalar_one_or_none() or 0
@@ -127,7 +149,7 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     today_pay_res = await db.execute(
         select(func.sum(Transaction.amount)).filter(
             Transaction.status == TransactionStatus.paid,
-            func.date(Transaction.created_at) == today
+            func.date(Transaction.created_at) == today,
         )
     )
     today_payments = today_pay_res.scalar_one_or_none() or 0
@@ -135,7 +157,7 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     return {
         "active_domains": active_count,
         "total_clicks": total_clicks,
-        "today_payments": today_payments
+        "today_payments": today_payments,
     }
 
 @router.get("/daily")

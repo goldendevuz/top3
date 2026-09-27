@@ -12,7 +12,7 @@ const LiveAnalytics = () => {
     }
 
     // Track this visit
-    fetch('http://localhost:8000/api/analytics/track', {
+    fetch('/api/analytics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visitor_id: visitorId })
@@ -20,7 +20,7 @@ const LiveAnalytics = () => {
 
     // Fetch initial stats
     const fetchStats = () => {
-      fetch('http://localhost:8000/api/analytics/daily')
+      fetch('/api/analytics/daily')
         .then(res => res.json())
         .then(resData => setData(resData))
         .catch(console.error);
