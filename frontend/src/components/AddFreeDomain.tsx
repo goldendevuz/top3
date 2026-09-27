@@ -49,9 +49,7 @@ export const AddFreeDomain = () => {
         const res = await axios.post('http://localhost:8000/api/auth/google', {
           access_token: tokenResponse.access_token
         });
-        localStorage.setItem('top3_user', JSON.stringify(res.data));
-        localStorage.setItem('token', tokenResponse.access_token);
-        window.location.reload();
+        useAuthStore.getState().login(res.data, tokenResponse.access_token);
       } catch (err) {
         console.error('Google login error:', err);
       }

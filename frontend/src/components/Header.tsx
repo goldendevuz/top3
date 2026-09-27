@@ -7,39 +7,32 @@ import logo from '../assets/logo.png';
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, login: storeLogin, logout: storeLogout } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('top3_user');
-    setUser(null);
+    storeLogout();
     setDropdownOpen(false);
   };
 
   const [isTelegram, setIsTelegram] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('top3_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    // The auth store already initializes the user from local storage
 
     // Telegram Native Auth
     const tg = (window as any).Telegram?.WebApp;
     if (tg && tg.initDataUnsafe?.user) {
       setIsTelegram(true);
-      if (!savedUser) {
+      if (!user) {
         const backendUrl = window.location.hostname.includes('localhost') 
           ? 'http://localhost:8000' 
           : 'https://piglet-factual-mentally.ngrok-free.app';
         axios.post(`${backendUrl}/api/auth/telegram`, tg.initDataUnsafe.user)
           .then(res => {
-            setUser(res.data.user);
-            localStorage.setItem('top3_user', JSON.stringify(res.data.user));
-            localStorage.setItem('token', res.data.token);
-            useAuthStore.getState().login(res.data.user, res.data.token);
+            storeLogin(res.data.user, res.data.token);
           })
           .catch(err => console.error('Telegram auth error:', err));
       }
@@ -55,10 +48,7 @@ const Header = () => {
         const res = await axios.post(`${backendUrl}/api/auth/google`, {
           access_token: tokenResponse.access_token
         });
-        setUser(res.data);
-        localStorage.setItem('top3_user', JSON.stringify(res.data));
-        localStorage.setItem('token', tokenResponse.access_token);
-        useAuthStore.getState().login(res.data, tokenResponse.access_token);
+        storeLogin(res.data, tokenResponse.access_token);
       } catch (err) {
         console.error('Google login backend error:', err);
       }

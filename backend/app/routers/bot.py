@@ -23,17 +23,7 @@ async def handle_update(update: dict):
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
             "chat_id": chat_id,
-            "text": "Assalomu alaykum! Top3.uz platformasiga xush kelibsiz. O'z domeningizni reytingga qo'shish va SEO ko'rsatkichingizni oshirish uchun pastdagi tugmani bosing 👇",
-            "reply_markup": {
-                "inline_keyboard": [
-                    [
-                        {
-                            "text": "🚀 Top3 ni ochish",
-                            "web_app": {"url": base_url}
-                        }
-                    ]
-                ]
-            }
+            "text": "Assalomu alaykum! Top3.uz admin xabarnomalari botiga xush kelibsiz. Bu yerda sayt qo'shilganda bildirishnomalar keladi."
         }
         async with httpx.AsyncClient() as client:
             await client.post(url, json=payload)

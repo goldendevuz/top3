@@ -139,7 +139,14 @@ async def openapi(username: str = Depends(get_current_username)):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://188.245.70.100",
+        "http://188.245.70.100:5173",
+        "http://188.245.70.100:8000",
+        "https://piglet-factual-mentally.ngrok-free.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
