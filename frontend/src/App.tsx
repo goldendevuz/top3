@@ -13,6 +13,7 @@ import DailyBoard from './components/DailyBoard';
 import Profile from './components/Profile';
 import Categories from './components/Categories';
 import CategoryPage from './components/CategoryPage';
+import CategoryBrowse from './components/CategoryBrowse';
 import { useAuthStore } from './store/useAuthStore';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "your_google_client_id_here";
@@ -47,6 +48,7 @@ const HomePage = () => (
     <main className="flex-1">
       <Hero />
       <Board />
+      <CategoryBrowse />
       
       <section id="how">
         <div className="wrap">

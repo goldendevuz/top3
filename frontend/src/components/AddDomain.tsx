@@ -309,49 +309,7 @@ export const AddDomain = () => {
   return (
     <section id="add" className="py-8 md:py-12 flex flex-col items-center justify-center w-full gap-6">
       
-      {/* 1-QAVAT: KATEGORIYALAR QATORI */}
-      <div className="w-full relative flex items-center overflow-hidden mb-2">
-        <div className="w-full flex flex-row items-center gap-2 overflow-x-auto scrollbar-hide pr-32 px-4 pb-2 pt-1">
-          {categories.map((c) => (
-            <a
-              key={c}
-              href={`/?category=${encodeURIComponent(c)}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap transition-all no-underline"
-              style={{
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.18)',
-                borderRadius: '999px',
-                color: 'var(--ink-soft)',
-                fontSize: '13px',
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.18)';
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.4)';
-                (e.currentTarget as HTMLElement).style.color = '#fff';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)';
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.18)';
-                (e.currentTarget as HTMLElement).style.color = 'var(--ink-soft)';
-              }}
-            >
-              <span style={{ fontSize: '14px' }}>{categoryIcons[c] || "📌"}</span>
-              <span>{c}</span>
-            </a>
-          ))}
-        </div>
-        <div className="absolute right-0 top-0 h-full flex items-center pl-12 bg-gradient-to-l from-[#0A0E1D] via-[#0A0E1D]/90 to-transparent pr-4 z-10 pb-1">
-          <Link to="/categories" className="flex items-center gap-2 px-4 py-1.5 text-white text-sm font-bold rounded-full transition-all cursor-pointer no-underline" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
-            <span>⊞</span>
-            Barchasi
-          </Link>
-        </div>
-      </div>
-
-
-      {/* 2-QAVAT: DYNAMIC HEADER (RANK CALCULATOR) */}
+      {/* DYNAMIC HEADER (RANK CALCULATOR) */}
       <div className="w-full text-center px-4">
         <h1 className="text-center text-4xl md:text-5xl font-bold text-white transition-all tracking-tight">
           <span className="text-indigo-400">{getPredictedRank()}</span>-o'rinni <span>{formatNum(inputValue)} 000</span> so'mga band qiling!
