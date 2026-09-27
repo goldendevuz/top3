@@ -95,8 +95,8 @@ const CategoryBrowse = () => {
               }}>
                 {name}
               </div>
-              <div style={{ fontSize: 11, color: count > 0 ? accent : 'var(--muted)', fontWeight: 600 }}>
-                {count} ta sayt
+              <div style={{ fontSize: 11, color: accent, fontWeight: 600, minHeight: 14 }}>
+                {count > 0 ? `${count} ta sayt` : ''}
               </div>
             </div>
           </Link>
