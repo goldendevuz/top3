@@ -49,6 +49,7 @@ const Header = () => {
           access_token: tokenResponse.access_token
         });
         storeLogin(res.data, tokenResponse.access_token);
+        window.location.href = '/';
       } catch (err) {
         console.error('Google login backend error:', err);
       }

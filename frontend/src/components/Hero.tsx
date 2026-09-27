@@ -25,11 +25,11 @@ const Hero = () => {
           <span className="eyebrow"><span className="dot"></span> .uz saytlari uchun reyting</span>
           <h1>Pul to'lang — <em>tepaga</em> chiqing.<br/>O'zbekistonning har bir sayti bitta ro'yxatda.</h1>
           <p className="lead">Top3 — .uz domenlaridagi saytlar uchun ochiq reyting: doimiy "Umumiy" taxta, faqat bugungi kun uchun sotib olinadigan "Bugun" o'rinlar va har kim SEO ma'lumotlari bilan avtomatik qo'sha oladigan ochiq ro'yxat.</p>
-          <div className="hero-cta">
+          <div className="hero-cta w-full justify-center">
             <a href="#add" className="btn btn-primary">Saytingizni qo'shish</a>
             <a href="#board" className="btn btn-ghost">Reytingni ko'rish</a>
           </div>
-          <div className="stat-row">
+          <div className="stat-row w-full justify-center">
             <div className="stat"><b className="counter">{fmt(stats.active_domains)}</b><span>Ro'yxatdagi saytlar</span></div>
             <div className="stat"><b className="counter">{fmt(stats.total_clicks)}</b><span>Jami o'tishlar</span></div>
             <div className="stat"><b className="counter">{fmt(stats.today_payments)}</b><span>Bugungi to'lovlar (so'm)</span></div>
