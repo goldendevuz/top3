@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
-import { categories } from './Categories';
+import { categories, categoryConfig } from './Categories';
+import { useBoardStore } from '../store/useBoardStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 const LINK_RE = /^(https?:\/\/)?([a-z0-9-]+)(\.[a-z0-9-]+)+([/?#].*)?$/i;
 const SUBDOMAIN_RE = /^[a-z0-9-]+$/i;
@@ -69,10 +71,10 @@ export const AddDomain = () => {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await axios.post('http://localhost:8000/api/auth/google', {
+        const res = await axios.post('/api/auth/google', {
           access_token: tokenResponse.access_token
         });
-        useAuthStore.getState().login(res.data, tokenResponse.access_token);
+        useAuthStore.getState().login(res.data.user || res.data, res.data.token || tokenResponse.access_token);
       } catch (err) {
         console.error('Google login error:', err);
       }
@@ -99,14 +101,11 @@ export const AddDomain = () => {
     }
   }, []);
 
+  // Use store domains for rank calculator (no extra fetch needed)
+  const { domains } = useBoardStore();
   useEffect(() => {
-    fetch('http://localhost:8000/api/domains/')
-      .then(res => res.json())
-      .then(data => {
-        setCompetitors(data.map((d: any) => ({ board_type: d.board_type, price: d.current_price || 0 })));
-      })
-      .catch(console.error);
-  }, []);
+    setCompetitors(domains.map((d: any) => ({ board_type: d.type || 'umumiy', price: d.price || 0 })));
+  }, [domains]);
 
   useEffect(() => {
     setRedirectWarning('');
