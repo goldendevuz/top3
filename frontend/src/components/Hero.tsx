@@ -9,7 +9,7 @@ const Hero = () => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/domains/stats')
+    fetch('/api/domains/stats')
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(e => console.error(e));

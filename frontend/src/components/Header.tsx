@@ -44,7 +44,8 @@ const Header = () => {
         const res = await axios.post(`${backendUrl}/api/auth/google`, {
           access_token: tokenResponse.access_token
         });
-        storeLogin(res.data, tokenResponse.access_token);
+        // Backend returns {token, user}
+        storeLogin(res.data.user, res.data.token);
         window.location.href = '/';
       } catch (err) {
         console.error('Google login backend error:', err);

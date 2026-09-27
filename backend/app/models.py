@@ -23,6 +23,7 @@ class User(Base):
     telegram_id = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
+    auth_token = Column(String, unique=True, index=True, nullable=True)
     domains = relationship("Domain", back_populates="owner")
     transactions = relationship("Transaction", back_populates="user")
 

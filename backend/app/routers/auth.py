@@ -72,6 +72,7 @@ async def google_login(req: GoogleLoginRequest):
     if not google_id or not email:
         raise HTTPException(status_code=400, detail="Incomplete Google profile")
 
+    import secrets as _secrets
     async with AsyncSessionLocal() as db:
         # Check if user exists
         stmt = select(User).where(User.google_id == google_id)
@@ -81,14 +82,20 @@ async def google_login(req: GoogleLoginRequest):
         if not user:
             user = User(google_id=google_id, email=email)
             db.add(user)
-            await db.commit()
-            await db.refresh(user)
+        
+        # Always issue a new backend token
+        user.auth_token = _secrets.token_urlsafe(32)
+        await db.commit()
+        await db.refresh(user)
             
         return {
-            "id": user.id,
-            "email": user.email,
-            "name": name,
-            "picture": picture
+            "token": user.auth_token,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": name,
+                "picture": picture
+            }
         }
 
 @router.post("/link-google")

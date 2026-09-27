@@ -22,7 +22,15 @@ async def get_optional_user(credentials: HTTPAuthorizationCredentials = Depends(
             )
             result = await db.execute(stmt)
             return result.scalars().first()
+        
+        # Check DB auth_token first (fast, no external API call)
+        stmt = select(User).where(User.auth_token == token)
+        result = await db.execute(stmt)
+        user = result.scalars().first()
+        if user:
+            return user
             
+        # Fallback: Google access token verification (for legacy tokens)
         async with httpx.AsyncClient() as client:
             res = await client.get(
                 "https://www.googleapis.com/oauth2/v3/userinfo",

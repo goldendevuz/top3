@@ -82,6 +82,11 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE domains ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending';"))
             await conn.execute(text("UPDATE domains SET status = 'active' WHERE is_active = true AND status = 'pending';"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_id VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_token VARCHAR(255);"))
+            try:
+                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_auth_token ON users (auth_token);"))
+            except Exception:
+                pass
             try:
                 await conn.execute(text("ALTER TABLE domains ADD COLUMN is_demo BOOLEAN DEFAULT 0;"))
             except Exception:
