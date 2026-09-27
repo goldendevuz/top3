@@ -20,19 +20,22 @@ const Hero = () => {
   return (
     <section className="hero">
       <div className="wrap hero-grid">
-        <div className="flex flex-col items-center text-center">
+        <div className="flex flex-col items-start text-left">
           <LiveAnalytics />
-          <span className="eyebrow"><span className="dot"></span> .uz saytlari uchun reyting</span>
-          <h1>Pul to'lang — <em>tepaga</em> chiqing.<br/>O'zbekistonning har bir sayti bitta ro'yxatda.</h1>
-          <p className="lead">Top3 — .uz domenlaridagi saytlar uchun ochiq reyting: doimiy "Umumiy" taxta, faqat bugungi kun uchun sotib olinadigan "Bugun" o'rinlar va har kim SEO ma'lumotlari bilan avtomatik qo'sha oladigan ochiq ro'yxat.</p>
-          <div className="hero-cta w-full justify-center">
-            <a href="#add" className="btn btn-primary">Saytingizni qo'shish</a>
-            <a href="#board" className="btn btn-ghost">Reytingni ko'rish</a>
+          <h1 style={{ marginTop: '32px', textAlign: 'left', lineHeight: '1.15' }}>
+            Pul to'lang — <em>tepaga</em> chiqing.<br/>O'zbekistonning har bir sayti bitta ro'yxatda.
+          </h1>
+          <p className="lead" style={{ textAlign: 'left', maxWidth: '580px', marginTop: '20px', color: 'var(--muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
+            Top3 — .uz domenlaridagi saytlar uchun ochiq reyting: doimiy "Umumiy" taxta, faqat bugungi kun uchun sotib olinadigan "Bugun" o'rinlar va har kim SEO ma'lumotlari bilan avtomatik qo'sha oladigan ochiq ro'yxat.
+          </p>
+          <div className="hero-cta w-full justify-start mt-8">
+            <a href="#add" className="btn btn-primary" style={{ padding: '16px 28px', fontSize: '15px' }}>Saytingizni qo'shish</a>
+            <a href="#board" className="btn btn-ghost" style={{ padding: '16px 28px', fontSize: '15px' }}>Reytingni ko'rish</a>
           </div>
-          <div className="stat-row w-full justify-center">
-            <div className="stat"><b className="counter">{fmt(stats.active_domains)}</b><span>Ro'yxatdagi saytlar</span></div>
-            <div className="stat"><b className="counter">{fmt(stats.total_clicks)}</b><span>Jami o'tishlar</span></div>
-            <div className="stat"><b className="counter">{fmt(stats.today_payments)}</b><span>Bugungi to'lovlar (so'm)</span></div>
+          <div className="stat-row w-full justify-start mt-10" style={{ gap: '40px', paddingTop: '28px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="stat" style={{ alignItems: 'flex-start' }}><b className="counter text-white">{fmt(stats.active_domains)}</b><span style={{ color: 'var(--muted)' }}>Ro'yxatdagi saytlar</span></div>
+            <div className="stat" style={{ alignItems: 'flex-start' }}><b className="counter text-white">{fmt(stats.total_clicks)}</b><span style={{ color: 'var(--muted)' }}>Jami o'tishlar</span></div>
+            <div className="stat" style={{ alignItems: 'flex-start' }}><b className="counter text-white">{fmt(stats.today_payments)}</b><span style={{ color: 'var(--muted)' }}>Bugungi to'lovlar (so'm)</span></div>
           </div>
         </div>
 
