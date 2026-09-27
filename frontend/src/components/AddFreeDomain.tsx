@@ -281,7 +281,7 @@ export const AddFreeDomain = () => {
   };
 
   return (
-    <section className="flex flex-col items-center justify-center w-full min-h-[calc(100vh-80px)] py-8">
+    <section className="min-h-[calc(100vh-100px)] flex flex-col items-center justify-center py-10 w-full">
       <div className="w-full max-w-2xl bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-xl">
         <h2 className="text-3xl font-bold text-white mb-6 text-center">Bepul yoki Sponsor domen qo'shish</h2>
         

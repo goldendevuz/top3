@@ -196,7 +196,7 @@ function App() {
       }
       
       storeLogin(userObj || ({} as any), token);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.location.href = '/';
     }
   }, [storeLogin]);
 
