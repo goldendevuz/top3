@@ -16,9 +16,7 @@ const Profile = () => {
   const handleResetClicks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const backendUrl = window.location.hostname.includes('localhost') 
-        ? 'http://localhost:8000' 
-        : 'https://piglet-factual-mentally.ngrok-free.app';
+      const backendUrl = "";
       
       await axios.post(`${backendUrl}/api/admin/reset-clicks`, {}, {
         headers: {
@@ -37,9 +35,7 @@ const Profile = () => {
   const handleSeedDemo = async () => {
     try {
       const token = localStorage.getItem('token');
-      const backendUrl = window.location.hostname.includes('localhost') 
-        ? 'http://localhost:8000' 
-        : 'https://piglet-factual-mentally.ngrok-free.app';
+      const backendUrl = "";
       
       await axios.post(`${backendUrl}/api/admin/seed-demo`, {}, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -55,9 +51,7 @@ const Profile = () => {
   const handleToggleDemo = async () => {
     try {
       const token = localStorage.getItem('token');
-      const backendUrl = window.location.hostname.includes('localhost') 
-        ? 'http://localhost:8000' 
-        : 'https://piglet-factual-mentally.ngrok-free.app';
+      const backendUrl = "";
       
       await axios.post(`${backendUrl}/api/admin/toggle-demo`, {}, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -85,9 +79,7 @@ const Profile = () => {
       toast.error('Token topilmadi');
       return;
     }
-    const backendUrl = window.location.hostname.includes('localhost') 
-      ? 'http://localhost:8000' 
-      : 'https://piglet-factual-mentally.ngrok-free.app';
+    const backendUrl = "";
       
     const url = `${backendUrl}/api/auth/google-link-redirect?token=${token}`;
     
@@ -115,9 +107,7 @@ const Profile = () => {
     if (!user) return;
     const fetchMyDomains = async () => {
       try {
-        const backendUrl = window.location.hostname.includes('localhost') 
-          ? 'http://localhost:8000' 
-          : 'https://piglet-factual-mentally.ngrok-free.app';
+        const backendUrl = "";
         const token = localStorage.getItem('token');
         
         const res = await axios.get(`${backendUrl}/api/domains/my`, {
@@ -168,9 +158,7 @@ const Profile = () => {
   const executeDelete = async () => {
     if (!confirmState.domainId) return;
     try {
-      const backendUrl = window.location.hostname.includes('localhost') 
-        ? 'http://localhost:8000' 
-        : 'https://piglet-factual-mentally.ngrok-free.app';
+      const backendUrl = "";
       const token = localStorage.getItem('token');
       
       await axios.delete(`${backendUrl}/api/domains/${confirmState.domainId}`, {

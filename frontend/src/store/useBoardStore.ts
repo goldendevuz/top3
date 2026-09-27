@@ -30,9 +30,7 @@ interface BoardStore {
   registerVisit: (dom_id: number) => Promise<void>;
 }
 
-const backendUrl = window.location.hostname.includes('localhost') 
-  ? 'http://localhost:8000' 
-  : 'https://piglet-factual-mentally.ngrok-free.app';
+const backendUrl = "";
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
   domains: [],

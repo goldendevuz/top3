@@ -27,9 +27,7 @@ const Header = () => {
     if (tg && tg.initDataUnsafe?.user) {
       setIsTelegram(true);
       if (!user) {
-        const backendUrl = window.location.hostname.includes('localhost') 
-          ? 'http://localhost:8000' 
-          : 'https://piglet-factual-mentally.ngrok-free.app';
+        const backendUrl = "";
         axios.post(`${backendUrl}/api/auth/telegram`, tg.initDataUnsafe.user)
           .then(res => {
             storeLogin(res.data.user, res.data.token);
@@ -42,9 +40,7 @@ const Header = () => {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const backendUrl = window.location.hostname.includes('localhost') 
-          ? 'http://localhost:8000' 
-          : 'https://piglet-factual-mentally.ngrok-free.app';
+        const backendUrl = "";
         const res = await axios.post(`${backendUrl}/api/auth/google`, {
           access_token: tokenResponse.access_token
         });

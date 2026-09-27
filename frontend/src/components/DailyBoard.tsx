@@ -31,9 +31,7 @@ const DailyBoard = () => {
       deviceId = crypto.randomUUID();
       localStorage.setItem('device_id', deviceId);
     }
-    const backendUrl = window.location.hostname.includes('localhost') 
-      ? 'http://localhost:8000' 
-      : 'https://piglet-factual-mentally.ngrok-free.app';
+    const backendUrl = "";
       
     fetch(`${backendUrl}/api/domains/${id}/click`, { 
       method: 'POST',

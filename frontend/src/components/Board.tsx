@@ -3,9 +3,7 @@ import { useBoardStore, DomainItem } from '../store/useBoardStore';
 
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-const backendUrl = window.location.hostname.includes('localhost') 
-  ? 'http://localhost:8000' 
-  : 'https://piglet-factual-mentally.ngrok-free.app';
+const backendUrl = "";
 
 /* ─── Domain Row (organic ranking card) ─── */
 const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
