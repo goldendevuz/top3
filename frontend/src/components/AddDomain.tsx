@@ -310,23 +310,47 @@ export const AddDomain = () => {
   return (
     <section id="add" className="py-8 md:py-12 flex flex-col items-center justify-center w-full gap-6">
       
-      {/* 1-QAVAT: KATEGORIYALAR QATORI (QAYTARILDI) */}
+      {/* 1-QAVAT: KATEGORIYALAR QATORI */}
       <div className="w-full relative flex items-center overflow-hidden mb-2">
-        <div className="w-full flex flex-row items-center gap-3 overflow-x-auto scrollbar-hide pr-32 px-4 pb-2 pt-1">
+        <div className="w-full flex flex-row items-center gap-2 overflow-x-auto scrollbar-hide pr-32 px-4 pb-2 pt-1">
           {categories.map((c) => (
-            <div key={c} className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 hover:bg-slate-700/80 rounded-full cursor-pointer whitespace-nowrap transition-colors border border-slate-700/50 shadow-sm">
-              <span className="text-base">{categoryIcons[c] || "📌"}</span>
-              <span className="text-sm font-medium text-slate-200">{c}</span>
-            </div>
+            <a
+              key={c}
+              href={`/?category=${encodeURIComponent(c)}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap transition-all no-underline"
+              style={{
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.18)',
+                borderRadius: '999px',
+                color: 'var(--ink-soft)',
+                fontSize: '13px',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.18)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.4)';
+                (e.currentTarget as HTMLElement).style.color = '#fff';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.18)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--ink-soft)';
+              }}
+            >
+              <span style={{ fontSize: '14px' }}>{categoryIcons[c] || "📌"}</span>
+              <span>{c}</span>
+            </a>
           ))}
         </div>
-        <div className="absolute right-0 top-0 h-full flex items-center pl-12 bg-gradient-to-l from-[#05080f] via-[#05080f] to-transparent pr-4 z-10 pb-1">
-          <Link to="/categories" className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 text-white text-sm font-bold rounded-full transition-all cursor-pointer">
-            <span className="w-2 h-2 rounded-sm bg-white/50"></span>
+        <div className="absolute right-0 top-0 h-full flex items-center pl-12 bg-gradient-to-l from-[#0A0E1D] via-[#0A0E1D]/90 to-transparent pr-4 z-10 pb-1">
+          <Link to="/categories" className="flex items-center gap-2 px-4 py-1.5 text-white text-sm font-bold rounded-full transition-all cursor-pointer no-underline" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
+            <span>⊞</span>
             Barchasi
           </Link>
         </div>
       </div>
+
 
       {/* 2-QAVAT: DYNAMIC HEADER (RANK CALCULATOR) */}
       <div className="w-full text-center px-4">

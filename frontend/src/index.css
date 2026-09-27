@@ -187,7 +187,8 @@ header.site.scrolled{box-shadow:0 8px 24px -16px rgb(var(--shadow)/.35);}
   0%{transform:translate3d(0,0,0) scale(1);}
   100%{transform:translate3d(2%,-3%,0) scale(1.06);}
 }
-.hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:44px; align-items:center;}
+.hero-grid{display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:center; min-width:0;}
+.hero-grid > *{min-width:0; overflow:hidden;}
 @media (max-width:880px){ .hero-grid{grid-template-columns:1fr;} }
 
 .eyebrow{
@@ -199,7 +200,7 @@ header.site.scrolled{box-shadow:0 8px 24px -16px rgb(var(--shadow)/.35);}
 .eyebrow .dot{width:6px;height:6px;border-radius:50%; background:var(--mint); box-shadow:0 0 0 3px var(--mint-soft); animation:blip 1.6s ease-in-out infinite;}
 @keyframes blip{0%,100%{opacity:1;} 50%{opacity:.35;}}
 
-.hero h1{font-size:clamp(30px,4.4vw,50px); font-weight:800; line-height:1.06; margin-top:16px;
+.hero h1{font-size:clamp(28px,3.6vw,48px); font-weight:800; line-height:1.1; margin-top:16px; word-break:keep-all; overflow-wrap:break-word;
   opacity:0; animation:rise .7s .12s cubic-bezier(.2,.9,.25,1) forwards;}
 .hero h1 em{font-style:normal; color:var(--brand);}
 .hero p.lead{font-size:16.5px; max-width:46ch; margin-top:16px;

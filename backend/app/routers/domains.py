@@ -108,10 +108,19 @@ async def get_my_domains(db: AsyncSession = Depends(get_db), current_user: User 
 
 @router.get("/stats")
 async def get_stats(db: AsyncSession = Depends(get_db)):
-    active_count_res = await db.execute(select(func.count(Domain.id)).filter(Domain.is_active == True, Domain.is_deleted == False))
+    # Only count real (non-demo) domains
+    active_count_res = await db.execute(
+        select(func.count(Domain.id)).filter(
+            Domain.is_active == True, Domain.is_deleted == False, Domain.is_demo == False
+        )
+    )
     active_count = active_count_res.scalar_one_or_none() or 0
 
-    total_clicks_res = await db.execute(select(func.sum(Domain.click_count)).filter(Domain.is_active == True, Domain.is_deleted == False))
+    total_clicks_res = await db.execute(
+        select(func.sum(Domain.click_count)).filter(
+            Domain.is_active == True, Domain.is_deleted == False, Domain.is_demo == False
+        )
+    )
     total_clicks = total_clicks_res.scalar_one_or_none() or 0
 
     today = date.today()
