@@ -12,6 +12,7 @@ import { useBoardStore } from './store/useBoardStore';
 import DailyBoard from './components/DailyBoard';
 import Profile from './components/Profile';
 import Categories from './components/Categories';
+import CategoryPage from './components/CategoryPage';
 import { useAuthStore } from './store/useAuthStore';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "your_google_client_id_here";
@@ -161,6 +162,16 @@ const CategoriesPage = () => (
   </div>
 );
 
+const CategoryDetailPage = () => (
+  <div className="flex flex-col min-h-screen">
+    <SEO title="Kategoriya — Top3" />
+    <Header />
+    <main className="flex-1">
+      <CategoryPage />
+    </main>
+  </div>
+);
+
 const ProfilePage = () => (
   <div className="flex flex-col min-h-screen">
     <SEO title="Mening profilim — Top3" />
@@ -208,6 +219,7 @@ function App() {
           <Route path="/add-free" element={<AddFreePage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/category/:name" element={<CategoryDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </BrowserRouter>

@@ -1,6 +1,6 @@
 import { useBoardStore } from '../store/useBoardStore';
 
-const categoryConfig: Record<string, { icon: string; gradient: string; accent: string }> = {
+export const categoryConfig: Record<string, { icon: string; gradient: string; accent: string }> = {
   "Onlayn do'konlar va Savdo":       { icon: "🛒", gradient: "from-orange-500/20 to-rose-500/10",     accent: "#fb923c" },
   "Ta'lim va O'quv markazlari":       { icon: "📚", gradient: "from-blue-500/20 to-indigo-500/10",    accent: "#60a5fa" },
   "Biznes, Moliya va Huquq":          { icon: "💼", gradient: "from-emerald-500/20 to-teal-500/10",   accent: "#34d399" },
@@ -60,12 +60,12 @@ const Categories = () => {
         }}>
           {categories.map(c => {
             const cfg = categoryConfig[c];
-            const count = domains.filter((d: any) => d.category === c).length;
+            const count = domains.filter((d: any) => d.cat === c).length;
 
             return (
               <a
                 key={c}
-                href={`/?category=${encodeURIComponent(c)}`}
+              href={`/category/${encodeURIComponent(c)}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '14px',
                   padding: '18px 20px',
