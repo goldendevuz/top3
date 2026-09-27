@@ -44,9 +44,10 @@ const CategoryBrowse = () => {
             to={`/category/${encodeURIComponent(name)}`}
             style={{
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: '12px',
-              padding: '14px 16px',
+              gap: '0px',
+              padding: '18px 12px 14px',
               background: 'var(--surface)',
               border: '1px solid var(--border)',
               borderRadius: '14px',
@@ -54,6 +55,7 @@ const CategoryBrowse = () => {
               transition: 'transform .18s, box-shadow .18s, border-color .18s',
               position: 'relative',
               overflow: 'hidden',
+              textAlign: 'center',
             }}
             onMouseEnter={e => {
               const el = e.currentTarget as HTMLElement;
@@ -71,31 +73,32 @@ const CategoryBrowse = () => {
             {/* Subtle color glow */}
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              background: `radial-gradient(ellipse at 0% 50%, ${accent}10, transparent 70%)`,
+              background: `radial-gradient(ellipse at 50% 0%, ${accent}12, transparent 70%)`,
               pointerEvents: 'none',
             }} />
 
             {/* Icon */}
             <div style={{
-              width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
               background: `${accent}15`,
               border: `1px solid ${accent}25`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, position: 'relative',
+              fontSize: 20, position: 'relative', marginBottom: 10,
             }}>
               {icon}
             </div>
 
             {/* Text */}
-            <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
               <div style={{
-                fontWeight: 700, fontSize: 13, color: 'var(--ink)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                marginBottom: 2,
+                fontWeight: 700, fontSize: 12.5, color: 'var(--ink)',
+                lineHeight: 1.35, textAlign: 'center',
+                wordBreak: 'keep-all', overflowWrap: 'break-word',
+                marginBottom: 4,
               }}>
                 {name}
               </div>
-              <div style={{ fontSize: 11, color: accent, fontWeight: 600, minHeight: 14 }}>
+              <div style={{ fontSize: 11, color: accent, fontWeight: 600, minHeight: 14, textAlign: 'center' }}>
                 {count > 0 ? `${count} ta sayt` : ''}
               </div>
             </div>
