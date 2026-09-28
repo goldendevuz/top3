@@ -21,7 +21,7 @@ const Hero = () => {
     <section className="hero">
       <div className="wrap hero-grid">
         <div className="flex flex-col items-start text-left">
-          <LiveAnalytics />
+
           <h1 style={{ marginTop: '32px', textAlign: 'left', lineHeight: '1.15' }}>
             Pul to'lang — <em>tepaga</em> chiqing.<br/>O'zbekistonning har bir sayti bitta ro'yxatda.
           </h1>
@@ -40,9 +40,13 @@ const Hero = () => {
         </div>
 
         <div className="hero-card">
-          <div className="hero-card-top">
-            <span className="tt">Umumiy taxta — jonli</span>
-            <span className="live-pill"><span className="dot"></span>LIVE</span>
+          <div className="hero-card-top flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div className="flex flex-col">
+              <span className="tt flex items-center gap-2">Umumiy taxta — jonli <span className="live-pill" style={{ position: 'static', transform: 'none', marginLeft: '4px' }}><span className="dot"></span>LIVE</span></span>
+              <div className="mt-1">
+                <LiveAnalytics />
+              </div>
+            </div>
           </div>
           <div id="heroMini">
             {/* Example mini rows from html */}
