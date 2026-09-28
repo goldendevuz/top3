@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/useAuthStore';
 const cleanDomainName = (val: string) => {
   let cleaned = val.replace(/^https?:\/\//i, '');
   cleaned = cleaned.replace(/^www\./i, '');
+  cleaned = cleaned.replace(/\s+/g, '');
   return cleaned;
 };
 

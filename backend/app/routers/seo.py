@@ -116,9 +116,11 @@ async def fetch_seo(domain: str, is_admin: bool = False):
         except Exception:
             pass
 
+    success = False
     try:
-        async with httpx.AsyncClient(timeout=5.0, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
             res = await client.get(url, follow_redirects=True)
+            success = True
             if len(res.history) > 0:
                 is_redirected = True
                 
@@ -140,8 +142,9 @@ async def fetch_seo(domain: str, is_admin: bool = False):
         if url.startswith("https://"):
             try:
                 url_http = url.replace("https://", "http://")
-                async with httpx.AsyncClient(timeout=5.0, headers=headers) as client:
+                async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
                     res = await client.get(url_http, follow_redirects=True)
+                    success = True
                     if len(res.history) > 0:
                         is_redirected = True
                     if res.status_code == 200:
@@ -153,8 +156,12 @@ async def fetch_seo(domain: str, is_admin: bool = False):
                             title = soup.find("title")
                             if title and title.text:
                                 desc = title.text.strip()
-            except Exception:
-                pass
+            except Exception as e2:
+                print(f"HTTP fallback error for {domain}: {e2}")
+                
+    if not success:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Sayt mavjud emas yoki ishlamayapti")
 
     cat_text = domain + " " + desc
     cat = determine_category(cat_text)

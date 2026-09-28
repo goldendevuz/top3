@@ -18,7 +18,8 @@ const cleanDomainName = (val: string) => {
   cleaned = cleaned.replace(/^www\./i, '');
   cleaned = cleaned.split(/[/?#]/)[0];
   cleaned = cleaned.split('.')[0];
-  cleaned = cleaned.replace(/[^a-z0-9-]/gi, '').toLowerCase();
+  // Remove any character that is NOT a-z, 0-9, or hyphen
+  cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase();
   return cleaned;
 };
 
@@ -146,7 +147,10 @@ export const AddDomain = () => {
             headers['x-user-id'] = user.id.toString();
           }
           const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
-          if (!res.ok) throw new Error('API error');
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || "Sayt mavjud emas yoki ishlamayapti");
+          }
           const data = await res.json();
           setCat(data.category || 'Boshqa');
           setDesc((data.description === "Ma'lumot topilmadi" || !data.description) ? "Sayt tavsifi kiritilmagan" : data.description);
@@ -159,11 +163,13 @@ export const AddDomain = () => {
           } else {
             setRedirectWarning('');
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(err);
-          setApiError(false);
-          setCat('Boshqa');
-          setDesc('Sayt tavsifi kiritilmagan');
+          setApiError(true);
+          setSubmitError(err.message || "Sayt mavjud emas yoki ishlamayapti");
+          setDomainOk(false);
+          setCat('—');
+          setDesc('—');
         }
       } else {
         setCat('—');
