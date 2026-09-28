@@ -8,7 +8,6 @@ const SUBDOMAIN_RE = /^[a-z0-9-]+$/i;
 
 const formatNum = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-<<<<<<< Updated upstream
 const cleanDomainName = (val: string) => {
   let cleaned = val.replace(/^https?:\/\//i, '');
   cleaned = cleaned.replace(/^www\./i, '');
@@ -17,7 +16,8 @@ const cleanDomainName = (val: string) => {
   // Remove any character that is NOT a-z, 0-9, or hyphen
   cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase();
   return cleaned;
-=======
+};
+
 const hashCode = (s: string) => {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
@@ -25,7 +25,6 @@ const hashCode = (s: string) => {
     h |= 0;
   }
   return Math.abs(h);
->>>>>>> Stashed changes
 };
 
 const faviconStyle = (dom: string) => {
@@ -153,7 +152,6 @@ export const AddDomain = () => {
             setCat('—');
             setDesc('—');
           }
-<<<<<<< Updated upstream
           const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -178,8 +176,6 @@ export const AddDomain = () => {
           setDomainOk(false);
           setCat('—');
           setDesc('—');
-=======
->>>>>>> Stashed changes
         }
       } else {
         setCat('—');

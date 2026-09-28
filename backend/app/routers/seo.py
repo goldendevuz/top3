@@ -73,8 +73,10 @@ async def fetch_seo(domain: str, is_admin: bool = False):
             pass
 
     success = False
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     try:
-<<<<<<< Updated upstream
         async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
             res = await client.get(url, follow_redirects=True)
             success = True
@@ -118,26 +120,6 @@ async def fetch_seo(domain: str, is_admin: bool = False):
                 
     if not success:
         from fastapi import HTTPException
-=======
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            res = await client.get(url, follow_redirects=True)
-            res.raise_for_status()
-            
-            if len(res.history) > 0:
-                is_redirected = True
-                
-            soup = BeautifulSoup(res.text, 'html.parser')
-            meta_desc = soup.find("meta", attrs={"name": "description"})
-            if meta_desc and meta_desc.get("content"):
-                desc = meta_desc["content"].strip()
-                if not desc:
-                    desc = "Ma'lumot topilmadi"
-            else:
-                title = soup.find("title")
-                if title and title.text:
-                    desc = title.text.strip()
-    except Exception:
->>>>>>> Stashed changes
         raise HTTPException(status_code=400, detail="Sayt mavjud emas yoki ishlamayapti")
 
     cat_text = domain + " " + desc
