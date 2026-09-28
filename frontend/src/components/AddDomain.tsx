@@ -85,9 +85,6 @@ export const AddDomain = () => {
           setPlacement(pending.placement);
           setDomain(pending.domain);
           setPrice((pending.price / 1000).toString());
-          setCustomSponsor(pending.customSponsor);
-          setCustomDesc(pending.customDesc);
-          setCustomCat(pending.customCat);
           localStorage.removeItem('pending_domain_data');
         } catch (e) {}
       }
