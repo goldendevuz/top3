@@ -176,17 +176,14 @@ export const AddDomain = () => {
     }, 700);
 
     return () => clearTimeout(check);
-  }, [domain, tier, customSponsor]);
+  }, [domain, tier]);
 
   const inputValue = parseInt(price, 10) || 1;
   const priceNum = inputValue * 1000;
   const priceOk = inputValue >= 1 && inputValue <= 100;
 
   const getPredictedRank = () => {
-    if (tier === 'seo') return -1;
-    const isPaid = tier === 'paid' || tier === 'sponsor';
-    if (!isPaid) return -1;
-    const currentBoardType = tier === 'sponsor' ? 'umumiy' : (placement === 'bugun' ? 'bugun' : 'umumiy');
+    const currentBoardType = placement === 'bugun' ? 'bugun' : 'umumiy';
     // For rank prediction, we only compare against other ORGANIC PAID domains (not sponsored)
     const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0 && !c.is_sponsored);
     relevant.push({ board_type: 'temp', price: priceNum });
@@ -194,7 +191,7 @@ export const AddDomain = () => {
     return relevant.findIndex(c => c.board_type === 'temp') + 1;
   };
 
-  const valid = domainOk && !fetching && (tier === 'seo' || priceOk);
+  const valid = domainOk && !fetching && priceOk;
   
   const displayDesc = desc;
   const displayCat = cat;
@@ -218,7 +215,7 @@ export const AddDomain = () => {
     const userStr = localStorage.getItem('top3_user');
     if (!userStr) {
       localStorage.setItem('pending_domain_data', JSON.stringify({
-        tier, placement, domain, price, customSponsor, customDesc, customCat
+        tier, placement, domain, price
       }));
       login();
       return;
@@ -238,8 +235,7 @@ export const AddDomain = () => {
     setConfirmState(false);
     setLoading(true);
     try {
-      const isPaid = tier === 'paid' || tier === 'sponsor';
-      const boardType = tier === 'seo' ? 'ochiq' : (placement === 'bugun' ? 'bugun' : 'umumiy');
+      const boardType = placement === 'bugun' ? 'bugun' : 'umumiy';
       
       const token = localStorage.getItem('token');
 
@@ -251,13 +247,13 @@ export const AddDomain = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          name: tier === 'sponsor' ? domain.replace(/^https?:\/\//i, "").split("/")[0] : domain + '.uz',
+          name: domain + '.uz',
           board_type: boardType,
-          price: isPaid ? priceNum : 0,
+          price: priceNum,
           description: displayDesc !== '—' ? displayDesc : undefined,
           category: displayCat !== '—' ? displayCat : undefined,
           user_id: user.id,
-          is_sponsored: tier === 'sponsor'
+          is_sponsored: false
         })
       });
       
@@ -276,25 +272,23 @@ export const AddDomain = () => {
       
       const domainRes = await res.json();
 
-      if (isPaid) {
-        const payRes = await fetch('http://localhost:8000/api/payments/init', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-User-Id': user.id.toString(),
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            domain_id: domainRes.id,
-            amount: priceNum,
-            user_id: user.id
-          })
-        }).then(r => r.json());
+      const payRes = await fetch('http://localhost:8000/api/payments/init', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id.toString(),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          domain_id: domainRes.id,
+          amount: priceNum,
+          user_id: user.id
+        })
+      }).then(r => r.json());
 
-        if (payRes.pay_url) {
-          window.location.href = payRes.pay_url;
-          return;
-        }
+      if (payRes.pay_url) {
+        window.location.href = payRes.pay_url;
+        return;
       }
       
       toast.success("Muvaffaqiyatli qo'shildi!");
