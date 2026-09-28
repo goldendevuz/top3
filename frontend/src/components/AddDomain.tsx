@@ -13,14 +13,12 @@ const SUBDOMAIN_RE = /^[a-z0-9-]+$/i;
 
 const formatNum = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-const cleanDomainName = (val: string, isSponsor: boolean) => {
+const cleanDomainName = (val: string) => {
   let cleaned = val.replace(/^https?:\/\//i, '');
   cleaned = cleaned.replace(/^www\./i, '');
-  if (!isSponsor) {
-    cleaned = cleaned.split(/[/?#]/)[0];
-    cleaned = cleaned.split('.')[0];
-    cleaned = cleaned.replace(/[^a-z0-9-]/gi, '').toLowerCase();
-  }
+  cleaned = cleaned.split(/[/?#]/)[0];
+  cleaned = cleaned.split('.')[0];
+  cleaned = cleaned.replace(/[^a-z0-9-]/gi, '').toLowerCase();
   return cleaned;
 };
 
@@ -45,15 +43,11 @@ const categoryIcons: Record<string, string> = {
 };
 
 export const AddDomain = () => {
-  const [tier, setTier] = useState<'seo' | 'paid' | 'sponsor'>('paid');
+  const [tier, setTier] = useState<'paid'>('paid');
   const [placement, setPlacement] = useState<'umumiy' | 'bugun'>('umumiy');
   const [domain, setDomain] = useState('');
   const [price, setPrice] = useState('1');
   
-  const [customSponsor, setCustomSponsor] = useState(false);
-  const [customDesc, setCustomDesc] = useState('');
-  const [customCat, setCustomCat] = useState('');
-
   const [cat, setCat] = useState('—');
   const [desc, setDesc] = useState('—');
   const [fetching, setFetching] = useState(false);
@@ -112,8 +106,7 @@ export const AddDomain = () => {
 
   // Auto-calculate required price for 1st place
   useEffect(() => {
-    if (tier === 'seo') return;
-    const currentBoardType = tier === 'sponsor' ? 'umumiy' : (placement === 'bugun' ? 'bugun' : 'umumiy');
+    const currentBoardType = placement === 'bugun' ? 'bugun' : 'umumiy';
     const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0 && !c.is_sponsored);
     
     let maxPrice = 0;
@@ -143,40 +136,37 @@ export const AddDomain = () => {
     const check = setTimeout(async () => {
       setFetching(true);
       setApiError(false);
-      const isOk = tier === 'sponsor' ? LINK_RE.test(domain) : SUBDOMAIN_RE.test(domain);
+      const isOk = SUBDOMAIN_RE.test(domain);
       setDomainOk(isOk);
       
       if (isOk) {
-        if (!(tier === 'sponsor' && customSponsor)) {
-          try {
-            const target = tier === 'sponsor' ? domain.replace(/^https?:\/\//i, "").split("/")[0] : domain + '.uz';
-            const userStr = localStorage.getItem('top3_user');
-            const headers: Record<string, string> = {};
-            if (userStr) {
-              const user = JSON.parse(userStr);
-              headers['x-user-id'] = user.id.toString();
-            }
-            const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
-            if (!res.ok) throw new Error('API error');
-            const data = await res.json();
-            setCat(data.category || 'Boshqa');
-            setDesc((data.description === "Ma'lumot topilmadi" || !data.description) ? "Sayt tavsifi kiritilmagan" : data.description);
-            setUzRedirectData({
-              has: data.has_uz_redirect || false,
-              variant: data.uz_variant || ''
-            });
-            if (data.is_redirected && tier === 'seo') {
-              setRedirectWarning("Bu domen boshqa manzilga yo'naltirilmoqda (Redirect). Redirect orqali sayt ma'lumotlarini olish faqat Pullik tarifda mavjud. Siz pullik bo'limga o'tkazildingiz.");
-              setTier('paid');
-            } else if (!data.is_redirected) {
-              setRedirectWarning('');
-            }
-          } catch (err) {
-            console.error(err);
-            setApiError(false);
-            setCat('Boshqa');
-            setDesc('Sayt tavsifi kiritilmagan');
+        try {
+          const target = domain + '.uz';
+          const userStr = localStorage.getItem('top3_user');
+          const headers: Record<string, string> = {};
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            headers['x-user-id'] = user.id.toString();
           }
+          const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
+          if (!res.ok) throw new Error('API error');
+          const data = await res.json();
+          setCat(data.category || 'Boshqa');
+          setDesc((data.description === "Ma'lumot topilmadi" || !data.description) ? "Sayt tavsifi kiritilmagan" : data.description);
+          setUzRedirectData({
+            has: data.has_uz_redirect || false,
+            variant: data.uz_variant || ''
+          });
+          if (data.is_redirected) {
+            setRedirectWarning("Bu domen boshqa manzilga yo'naltirilmoqda. Biroq, Pullik tarifda bunga ruxsat beriladi.");
+          } else {
+            setRedirectWarning('');
+          }
+        } catch (err) {
+          console.error(err);
+          setApiError(false);
+          setCat('Boshqa');
+          setDesc('Sayt tavsifi kiritilmagan');
         }
       } else {
         setCat('—');
@@ -212,8 +202,10 @@ export const AddDomain = () => {
   let warning = submitError;
   if (redirectWarning) {
     warning = redirectWarning;
+  } else if (domain && !domainOk) {
+    warning = "Iltimos, to'g'ri nom kiriting (probelsiz, bo'shliqsiz, faqat lotin harflari, sonlar va chiziqcha).";
   } else if (!warning) {
-    if ((tier === 'paid' || tier === 'sponsor') && domainOk && !priceOk) {
+    if (domainOk && !priceOk) {
       warning = "Narx 1 000 so'mdan 100 000 so'mgacha bo'lishi shart.";
     }
   }
@@ -341,8 +333,8 @@ export const AddDomain = () => {
           <input 
             type="text" 
             value={domain} 
-            onChange={e => setDomain(cleanDomainName(e.target.value, tier === 'sponsor'))} 
-            placeholder={tier === 'sponsor' ? "To'liq havola (masalan: t.me/kitob)" : "Sayt URL (masalan: kitob)"}
+            onChange={e => setDomain(cleanDomainName(e.target.value))} 
+            placeholder="Sayt nomi (masalan: kitob)"
             className="w-full h-full bg-transparent outline-none px-4 text-white placeholder-slate-500 font-medium" 
           />
           <div className="px-4 text-slate-400 font-bold bg-slate-800/80 h-full flex items-center">.uz</div>

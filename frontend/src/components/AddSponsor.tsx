@@ -11,6 +11,8 @@ const cleanDomainName = (val: string) => {
   return cleaned;
 };
 
+const LINK_RE = /^(https?:\/\/)?([a-z0-9-]+)(\.[a-z0-9-]+)+([/?#].*)?$/i;
+
 export const AddSponsor = () => {
   const [domain, setDomain] = useState('');
   const [price, setPrice] = useState('5');
@@ -75,7 +77,7 @@ export const AddSponsor = () => {
       return;
     }
     const check = setTimeout(() => {
-      setDomainOk(domain.length > 3);
+      setDomainOk(LINK_RE.test(domain));
     }, 500);
     return () => clearTimeout(check);
   }, [domain]);
@@ -83,6 +85,11 @@ export const AddSponsor = () => {
   const priceNum = parseInt(price, 10) || 0;
   const priceOk = priceNum >= minSponsorPrice;
   const valid = domainOk && priceOk && desc.trim().length > 0 && cat !== '';
+  
+  let warning = submitError;
+  if (!warning && domain && !domainOk) {
+    warning = "Iltimos, to'g'ri havola kiriting (masalan, t.me/kanal_nomi).";
+  }
 
   const handleSubmit = async () => {
     if (!valid) return;
@@ -248,9 +255,9 @@ export const AddSponsor = () => {
             {loading ? "Kuting..." : "Xarid qilish"}
           </button>
 
-          {submitError && (
+          {warning && (
             <div className={`warn-box show !static !mt-0 w-full text-center rounded-xl`}>
-              ⚠ {submitError}
+              ⚠ {warning}
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 import httpx
 from bs4 import BeautifulSoup
 import re
@@ -170,6 +170,10 @@ async def fetch_seo(domain: str, is_admin: bool = False):
 
 @router.get("/fetch")
 async def fetch_seo_api(domain: str, request: Request, db: AsyncSession = Depends(get_db)):
+    domain_clean = domain.strip()
+    if not domain_clean or " " in domain_clean or "." not in domain_clean:
+        raise HTTPException(status_code=400, detail="Noto'g'ri havola")
+        
     is_admin = False
     user_id = request.headers.get("x-user-id")
     if user_id:

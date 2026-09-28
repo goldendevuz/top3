@@ -116,6 +116,9 @@ export const AddFreeDomain = () => {
   const valid = domainOk && !fetching && !redirectWarning;
   
   let warning = submitError || redirectWarning;
+  if (!warning && domain && !domainOk) {
+    warning = "Iltimos, to'g'ri nom kiriting (probelsiz, bo'shliqsiz, faqat lotin harflari, sonlar va chiziqcha).";
+  }
 
   const handleSubmit = async () => {
     if (!valid) return;
