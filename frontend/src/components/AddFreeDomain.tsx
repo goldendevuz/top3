@@ -161,8 +161,8 @@ export const AddFreeDomain = () => {
 
   const valid = domainOk && !fetching && (tier === 'seo' || priceOk);
   
-  const displayDesc = tier === 'sponsor' ? customDesc : desc;
-  const displayCat = tier === 'sponsor' ? customCat : cat;
+  const displayDesc = desc;
+  const displayCat = cat;
 
   let warning = submitError;
   if (redirectWarning) {
@@ -214,7 +214,7 @@ export const AddFreeDomain = () => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          name: tier === 'sponsor' ? domain.replace(/^https?:\/\//i, "").split("/")[0] : domain + '.uz',
+          name: tier === 'sponsor' ? `https://${domain}` : domain + '.uz',
           board_type: boardType,
           price: isPaid ? priceNum * 1000 : 0,
           description: displayDesc !== '—' ? displayDesc : undefined,
@@ -320,13 +320,29 @@ export const AddFreeDomain = () => {
           </div>
 
           {/* SEO OVERRIDE */}
-          {domainOk && !fetching && desc !== '—' && !(tier === 'sponsor' && customSponsor) && (
+          {domainOk && !fetching && desc !== '—' && (
             <div className="flex flex-col gap-4">
               <div>
-                <label className="block text-slate-300 font-medium mb-2">SEO Tavsif (Faqat o'qish uchun)</label>
-                <div className="w-full h-14 bg-slate-900/50 rounded-xl border border-slate-700/50 px-4 text-slate-400 flex items-center overflow-hidden whitespace-nowrap text-ellipsis" title={desc}>
-                  {desc}
-                </div>
+                <label className="block text-slate-300 font-medium mb-2">
+                  SEO Tavsif {tier === 'sponsor' ? "(O'zgartirish ruxsat etiladi)" : "(Faqat o'qish uchun)"}
+                </label>
+                {tier === 'sponsor' ? (
+                  <input 
+                    type="text"
+                    value={desc}
+                    onChange={e => setDesc(e.target.value)}
+                    className="w-full h-14 bg-slate-900 rounded-xl border border-slate-700 px-4 text-white focus:outline-none focus:border-indigo-500"
+                    title={desc}
+                  />
+                ) : (
+                  <input 
+                    type="text"
+                    value={desc}
+                    readOnly={true}
+                    className="w-full h-14 bg-slate-900/50 rounded-xl border border-slate-700/50 px-4 text-slate-400 focus:outline-none cursor-not-allowed"
+                    title={desc}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-slate-300 font-medium mb-2">SEO Kategoriya</label>
@@ -367,37 +383,7 @@ export const AddFreeDomain = () => {
                   <span className="pr-4 text-slate-400 whitespace-nowrap bg-transparent flex items-center select-none pointer-events-none"> 000</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 mt-2">
-                <input 
-                  type="checkbox" 
-                  id="customSponsor" 
-                  checked={customSponsor} 
-                  onChange={(e) => setCustomSponsor(e.target.checked)} 
-                  className="w-5 h-5 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-700" 
-                />
-                <label htmlFor="customSponsor" className="text-slate-300">Ma'lumotlarni o'zim kiritaman (SEO yo'q)</label>
-              </div>
-              
-              {customSponsor && (
-                <div className="flex flex-col gap-4 mt-4 p-4 bg-slate-900 rounded-xl border border-slate-700">
-                  <input 
-                    type="text" 
-                    placeholder="Qisqacha tavsif (Max 55 belgi)" 
-                    value={customDesc} 
-                    onChange={e => setCustomDesc(e.target.value)} 
-                    maxLength={55}
-                    className="w-full h-12 bg-slate-800 rounded-lg border border-slate-700 px-4 text-white focus:outline-none focus:border-indigo-500" 
-                  />
-                  <select 
-                    value={customCat} 
-                    onChange={e => setCustomCat(e.target.value)}
-                    className="w-full h-12 bg-slate-800 rounded-lg border border-slate-700 px-4 text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="">Kategoriya tanlang...</option>
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              )}
+
             </>
           )}
 

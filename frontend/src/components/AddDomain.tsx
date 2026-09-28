@@ -395,12 +395,12 @@ export const AddDomain = () => {
             </select>
           </div>
           <div className="flex-[2]">
-            <label className="block text-slate-300 font-medium mb-1 ml-1 text-sm">SEO Tavsif <span className="text-xs text-slate-500 font-normal ml-1">(O'zgartirish ruxsat etiladi)</span></label>
+            <label className="block text-slate-300 font-medium mb-1 ml-1 text-sm">SEO Tavsif (Faqat o'qish uchun)</label>
             <input 
               type="text"
               value={desc}
-              onChange={e => setDesc(e.target.value)}
-              className="w-full h-12 bg-slate-800 rounded-xl border border-slate-700 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm"
+              readOnly={true}
+              className="w-full h-12 bg-slate-800/50 rounded-xl border border-slate-700/50 px-4 text-slate-400 focus:outline-none text-sm cursor-not-allowed"
               title={desc}
             />
           </div>

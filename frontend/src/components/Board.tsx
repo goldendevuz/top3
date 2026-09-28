@@ -3,6 +3,16 @@ import { useBoardStore, DomainItem } from '../store/useBoardStore';
 
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+const cleanUrlDisplay = (url: string) => {
+  if (!url) return "";
+  try {
+    const u = url.startsWith('http') ? url : `https://${url}`;
+    return new URL(u).hostname.replace(/^www\./i, '');
+  } catch (e) {
+    return url;
+  }
+};
+
 const backendUrl = "";
 
 /* ─── Domain Row (organic ranking card) ─── */
@@ -25,7 +35,7 @@ const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
   else if (rank === 3) rankColor = "text-amber-600 drop-shadow-[0_0_10px_rgba(217,119,6,0.5)]";
 
   const buildUtmUrl = (domain: string) => {
-    const base = `https://${domain}`;
+    const base = domain.startsWith('http') ? domain : `https://${domain}`;
     const params = `utm_source=top3.uz&utm_medium=directory&utm_campaign=top3_referral`;
     return base.includes('?') ? `${base}&${params}` : `${base}?${params}`;
   };
@@ -66,14 +76,14 @@ const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 p-1.5 flex items-center justify-center shrink-0 overflow-hidden shadow-inner group-hover:scale-105 transition-transform duration-300">
             <img 
-              src={`https://www.google.com/s2/favicons?domain=${item.dom}&sz=64`} 
+              src={`https://www.google.com/s2/favicons?domain=${cleanUrlDisplay(item.dom)}&sz=64`} 
               alt="favicon" 
               className="w-full h-full object-contain"
             />
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="text-base sm:text-lg font-bold text-white truncate">{item.dom}</h3>
+              <h3 className="text-base sm:text-lg font-bold text-white truncate">{cleanUrlDisplay(item.dom)}</h3>
               <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 border border-slate-700/50 truncate max-w-[130px]">{item.cat || "Boshqa"}</span>
             </div>
             <p className="text-xs text-slate-400 truncate max-w-[150px] sm:max-w-md">{item.desc}</p>
@@ -159,7 +169,9 @@ const SponsorCarousel = ({ sponsors }: { sponsors: DomainItem[] }) => {
     }).catch(() => {});
   };
 
-  const sponsorUrl = s.custom_url || `https://${s.dom}?utm_source=top3.uz&utm_medium=sponsor&utm_campaign=vip`;
+  const base = s.dom.startsWith('http') ? s.dom : `https://${s.dom}`;
+  const params = `utm_source=top3.uz&utm_medium=sponsor&utm_campaign=vip`;
+  const sponsorUrl = s.custom_url || (base.includes('?') ? `${base}&${params}` : `${base}?${params}`);
 
   return (
     <div className="my-4 relative">
@@ -190,14 +202,14 @@ const SponsorCarousel = ({ sponsors }: { sponsors: DomainItem[] }) => {
         <div className="flex items-center gap-4 sm:gap-5 relative z-10 min-w-0">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 p-2 flex items-center justify-center shrink-0 overflow-hidden shadow-lg shadow-amber-500/10 group-hover:scale-110 transition-transform duration-300">
             <img 
-              src={`https://www.google.com/s2/favicons?domain=${s.dom}&sz=64`} 
+              src={`https://www.google.com/s2/favicons?domain=${cleanUrlDisplay(s.dom)}&sz=64`} 
               alt="sponsor" 
               className="w-full h-full object-contain"
             />
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg sm:text-xl font-bold text-amber-100 truncate">{s.dom}</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-amber-100 truncate">{cleanUrlDisplay(s.dom)}</h3>
               <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-amber-300 border border-amber-500/40">VIP</span>
             </div>
             <p className="text-sm text-amber-200/60 truncate max-w-[200px] sm:max-w-lg">{s.custom_description || s.desc}</p>

@@ -2,6 +2,16 @@ import { useEffect, useState } from 'react';
 import LiveAnalytics from './LiveAnalytics';
 import { useBoardStore } from '../store/useBoardStore';
 
+const cleanUrlDisplay = (url: string) => {
+  if (!url) return "";
+  try {
+    const u = url.startsWith('http') ? url : `https://${url}`;
+    return new URL(u).hostname.replace(/^www\./i, '');
+  } catch (e) {
+    return url;
+  }
+};
+
 const Hero = () => {
   const [stats, setStats] = useState({
     active_domains: 0,
@@ -67,7 +77,7 @@ const Hero = () => {
               return (
                 <div className="mini-row" key={d.id || i}>
                   <div className={`mini-rank ${rClass}`}>{i + 1}</div>
-                  <div className="mini-dom">{d.dom}</div>
+                  <div className="mini-dom">{cleanUrlDisplay(d.dom)}</div>
                   <div className="mini-bar-wrap"><div className="mini-bar" style={{ width: w }}></div></div>
                 </div>
               );
