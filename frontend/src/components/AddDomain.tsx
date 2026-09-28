@@ -62,8 +62,7 @@ export const AddDomain = () => {
   const [submitError, setSubmitError] = useState('');
   const [redirectWarning, setRedirectWarning] = useState('');
   const [uzRedirectData, setUzRedirectData] = useState<{has: boolean, variant: string}>({has: false, variant: ''});
-  const [competitors, setCompetitors] = useState<{board_type: string, price: number}[]>([]);
-
+  const [competitors, setCompetitors] = useState<{board_type: string, price: number, is_sponsored?: boolean}[]>([]);
 
 
   const [confirmState, setConfirmState] = useState(false);
@@ -101,11 +100,30 @@ export const AddDomain = () => {
     }
   }, []);
 
-  // Use store domains for rank calculator (no extra fetch needed)
   const { domains } = useBoardStore();
+  
   useEffect(() => {
-    setCompetitors(domains.map((d: any) => ({ board_type: d.type || 'umumiy', price: d.price || 0 })));
+    setCompetitors(domains.map((d: any) => ({ 
+      board_type: d.type || 'umumiy', 
+      price: d.price || 0,
+      is_sponsored: !!d.is_sponsored
+    })));
   }, [domains]);
+
+  // Auto-calculate required price for 1st place
+  useEffect(() => {
+    if (tier === 'seo') return;
+    const currentBoardType = tier === 'sponsor' ? 'umumiy' : (placement === 'bugun' ? 'bugun' : 'umumiy');
+    const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0 && !c.is_sponsored);
+    
+    let maxPrice = 0;
+    if (relevant.length > 0) {
+      maxPrice = Math.max(...relevant.map(c => c.price));
+    }
+    
+    const needed = (maxPrice / 1000) + 1; // +1000 sum to beat the top
+    setPrice(needed.toString());
+  }, [tier, placement, competitors.length]);
 
   useEffect(() => {
     setRedirectWarning('');
@@ -179,9 +197,10 @@ export const AddDomain = () => {
     const isPaid = tier === 'paid' || tier === 'sponsor';
     if (!isPaid) return -1;
     const currentBoardType = tier === 'sponsor' ? 'umumiy' : (placement === 'bugun' ? 'bugun' : 'umumiy');
-    const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0);
+    // For rank prediction, we only compare against other ORGANIC PAID domains (not sponsored)
+    const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0 && !c.is_sponsored);
     relevant.push({ board_type: 'temp', price: priceNum });
-    relevant.sort((a, b) => b.price - a.price);
+    relevant.sort((a, b) => (b.price || 0) - (a.price || 0));
     return relevant.findIndex(c => c.board_type === 'temp') + 1;
   };
 
