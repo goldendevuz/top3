@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import LiveAnalytics from './LiveAnalytics';
+import { useBoardStore } from '../store/useBoardStore';
 
 const Hero = () => {
   const [stats, setStats] = useState({
@@ -7,6 +8,17 @@ const Hero = () => {
     total_clicks: 0,
     today_payments: 0
   });
+
+  const { domains } = useBoardStore();
+  
+  const organicPaid = domains
+    .filter((d: any) => d.type === 'umumiy' && d.isPaid && !d.is_sponsored)
+    .sort((a: any, b: any) => (b.price || 0) - (a.price || 0));
+  const organicFree = domains
+    .filter((d: any) => (!d.isPaid && !d.is_sponsored) && (d.type === 'umumiy' || d.type === 'ochiq'))
+    .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || a.addedAt - b.addedAt);
+  
+  const top3 = [...organicPaid, ...organicFree].slice(0, 3);
 
   useEffect(() => {
     fetch('/api/domains/stats')
@@ -49,22 +61,25 @@ const Hero = () => {
             </div>
           </div>
           <div id="heroMini">
-            {/* Example mini rows from html */}
-            <div className="mini-row">
-              <div className="mini-rank r1">1</div>
-              <div className="mini-dom">bozor.uz</div>
-              <div className="mini-bar-wrap"><div className="mini-bar" style={{ width: '100%' }}></div></div>
-            </div>
-            <div className="mini-row">
-              <div className="mini-rank r2">2</div>
-              <div className="mini-dom">repetitor.uz</div>
-              <div className="mini-bar-wrap"><div className="mini-bar" style={{ width: '70%' }}></div></div>
-            </div>
-            <div className="mini-row">
-              <div className="mini-rank r3">3</div>
-              <div className="mini-dom">dorixona.uz</div>
-              <div className="mini-bar-wrap"><div className="mini-bar" style={{ width: '50%' }}></div></div>
-            </div>
+            {top3.length > 0 ? top3.map((d, i) => {
+              const rClass = i === 0 ? 'r1' : i === 1 ? 'r2' : 'r3';
+              const w = i === 0 ? '100%' : i === 1 ? '70%' : '50%';
+              return (
+                <div className="mini-row" key={d.id || i}>
+                  <div className={`mini-rank ${rClass}`}>{i + 1}</div>
+                  <div className="mini-dom">{d.dom}</div>
+                  <div className="mini-bar-wrap"><div className="mini-bar" style={{ width: w }}></div></div>
+                </div>
+              );
+            }) : (
+              [1, 2, 3].map((i) => (
+                <div className="mini-row opacity-50 animate-pulse" key={i}>
+                  <div className={`mini-rank r${i}`}>{i}</div>
+                  <div className="mini-dom bg-slate-700/50 rounded text-transparent h-4 w-24">yuklanmoqda...</div>
+                  <div className="mini-bar-wrap"><div className="mini-bar" style={{ width: i === 1 ? '100%' : i === 2 ? '70%' : '50%' }}></div></div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
