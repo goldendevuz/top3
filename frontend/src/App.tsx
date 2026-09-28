@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Board from './components/Board';
@@ -16,6 +16,8 @@ import Categories from './components/Categories';
 import CategoryPage from './components/CategoryPage';
 import CategoryBrowse from './components/CategoryBrowse';
 import { useAuthStore } from './store/useAuthStore';
+import ScrollToTop from './components/ScrollToTop';
+import RouteProgressBar from './components/RouteProgressBar';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "your_google_client_id_here";
 
@@ -27,12 +29,14 @@ const toasterConfig = {
     border: '1px solid #334155',
   },
   success: {
+    duration: 3000,
     iconTheme: {
       primary: '#4ade80',
       secondary: '#1e293b',
     },
   },
   error: {
+    duration: 3000,
     iconTheme: {
       primary: '#f87171',
       secondary: '#1e293b',
@@ -89,11 +93,11 @@ const HomePage = () => (
           </div>
           <div className="price-grid reveal in">
             <div className="price-card free">
-              <span className="tag">Bepul (admin)</span>
+              <span className="tag">Bepul</span>
               <h3>Umumiy bo'lim</h3>
               <div className="price-num">0 <small>so'm</small></div>
               <ul className="price-list">
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Faqat admin (Alventus) qo'sha oladi</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Istalgan odam qo'sha oladi</li>
                 <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Tartib — unikal o'tishlar soni bo'yicha</li>
                 <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Umumiy bo'limdagi pullik joylardan pastda</li>
               </ul>
@@ -103,21 +107,22 @@ const HomePage = () => (
               <h3>Umumiy yoki Bugun</h3>
               <div className="price-num">1 000 <small>so'm dan</small></div>
               <ul className="price-list">
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Umumiy bo'lim uchun to'lov bir marta qilinadi (doimiy).</li>
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Bugun bo'limi uchun to'lov faqat bugun (24 soat) amal qiladi.</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Umumiy bo'lim uchun to'lov bir marta qilinadi.</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Bugun bo'limi uchun to'lov faqat to'langan kun uchun amal qiladi.</li>
                 <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Tanlagan bo'limingiz ichida faqat narx bo'yicha tartiblanasiz.</li>
               </ul>
             </div>
-            <div className="price-card seo">
-              <span className="tag">Ochiq / SEO</span>
-              <h3>Har kim, bepul</h3>
-              <div className="price-num">0 <small>so'm</small></div>
+            <div className="price-card seo" style={{ background: 'linear-gradient(180deg, rgba(217, 119, 6, 0.1) 0%, var(--surface) 100%)', borderColor: 'rgba(217, 119, 6, 0.3)' }}>
+              <span className="tag" style={{ background: '#d97706', color: '#fff' }}>Sponsor / VIP</span>
+              <h3>Barcha reytinglar ustida</h3>
+              <div className="price-num">5 000 <small>so'm dan</small></div>
               <ul className="price-list">
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Istalgan kishi istalgan .uz domenini qo'shadi</li>
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Tavsif va kategoriya SEO'dan avtomatik olinadi</li>
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Alohida ochiq katalog, reytingsiz</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>7 kun davomida eng yuqori e'tibor markazida bo'lish</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Barcha ro'yxatlar (Asosiy, Kunlik) tepasida "VIP" maxsus yorlig'i bilan</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L19 7"/></svg>Dizayn jihatdan alohida tilla rang hoshiya ajralib turadi</li>
               </ul>
             </div>
+
           </div>
         </div>
       </section>
@@ -127,7 +132,7 @@ const HomePage = () => (
     
     <footer>
       <div className="wrap foot-row">
-        <div className="foot-brand"><span className="mark">T3</span>Top3</div>
+        <Link to="/" className="foot-brand" style={{ textDecoration: 'none' }}><span className="mark">T3</span>Top3</Link>
         <span>Har bir .uz sayt uchun bitta joy. Tepaga chiqish — sizning qo'lingizda.</span>
         <span>top3.uz</span>
       </div>
@@ -220,13 +225,37 @@ function App() {
       }
       
       storeLogin(userObj || ({} as any), token);
-      window.location.href = '/';
+      // Hard reload so mobile browser refreshes cookies/session state
+      window.location.replace('/');
     }
+  }, [storeLogin]);
+
+  // Re-check auth when user returns to tab (mobile background → foreground)
+  useEffect(() => {
+    const recheck = () => {
+      const saved = localStorage.getItem('token');
+      const { token } = useAuthStore.getState();
+      if (saved && !token) {
+        try {
+          const user = JSON.parse(localStorage.getItem('top3_user') || '{}');
+          storeLogin(user, saved);
+        } catch {}
+      }
+    };
+    const onVisible = () => { if (!document.hidden) recheck(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', recheck);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', recheck);
+    };
   }, [storeLogin]);
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
+        <ScrollToTop />
+        <RouteProgressBar />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/add-free" element={<AddFreePage />} />
@@ -237,7 +266,12 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </BrowserRouter>
-      <Toaster position="bottom-center" toastOptions={toasterConfig} />
+      <Toaster
+        position="bottom-center"
+        toastOptions={toasterConfig}
+        containerStyle={{ bottom: 80 }}
+        gutter={6}
+      />
     </GoogleOAuthProvider>
   );
 }

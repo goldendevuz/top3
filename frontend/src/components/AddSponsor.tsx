@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { categories } from './Categories';
 import { useAuthStore } from '../store/useAuthStore';
 
+const backendUrl = import.meta.env.VITE_API_URL || '';
+
+
 const cleanDomainName = (val: string) => {
   let cleaned = val.replace(/^https?:\/\//i, '');
   cleaned = cleaned.replace(/^www\./i, '');
@@ -28,7 +31,7 @@ export const AddSponsor = () => {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await axios.post('http://localhost:8000/api/auth/google', {
+        const res = await axios.post(`${backendUrl}/api/auth/google`, {
           access_token: tokenResponse.access_token
         });
         useAuthStore.getState().login(res.data, tokenResponse.access_token);
@@ -56,13 +59,13 @@ export const AddSponsor = () => {
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/domains/')
+    fetch(`${backendUrl}/api/domains/`)
       .then(res => res.json())
       .then(data => {
         const umumiyDomains = data.filter((d: any) => d.board_type === 'umumiy');
         const top1 = umumiyDomains.length > 0 ? Math.max(...umumiyDomains.map((d: any) => d.current_price || 0)) : 0;
         const top1InThousands = Math.floor(top1 / 1000);
-        const minP = Math.max(5, top1InThousands);
+        const minP = Math.max(5, top1InThousands + 1);
         setMinSponsorPrice(minP);
         if (parseInt(price, 10) < minP) {
           setPrice(minP.toString());
@@ -112,7 +115,7 @@ export const AddSponsor = () => {
     setSubmitError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/domains/', {
+      const res = await fetch(`${backendUrl}/api/domains/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -145,7 +148,7 @@ export const AddSponsor = () => {
       
       const domainRes = await res.json();
 
-      const payRes = await fetch('http://localhost:8000/api/payments/init', {
+      const payRes = await fetch(`${backendUrl}/api/payments/init`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

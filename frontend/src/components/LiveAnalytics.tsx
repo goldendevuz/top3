@@ -34,8 +34,8 @@ const LiveAnalytics = () => {
   }, []);
 
   return (
-    <div className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+    <div className="inline-flex items-center gap-1.5 text-sm sm:text-base text-slate-300 font-medium mt-1">
+      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
       {data.visitors.toLocaleString()} tashrifchi &bull; {data.clicks.toLocaleString()} o'tish
     </div>
   );

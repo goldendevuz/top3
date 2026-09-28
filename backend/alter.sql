@@ -1,0 +1,1 @@
+ALTER TABLE domains ADD COLUMN custom_banner VARCHAR(255); ALTER TABLE domains ADD COLUMN custom_url VARCHAR(255); ALTER TABLE domains ADD COLUMN custom_cta VARCHAR(255); ALTER TABLE domains ADD COLUMN custom_description VARCHAR(255);

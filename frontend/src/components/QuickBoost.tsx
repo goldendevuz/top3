@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useBoardStore } from '../store/useBoardStore';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
-
 import toast from 'react-hot-toast';
 
+const backendUrl = import.meta.env.VITE_API_URL || '';
 const DOMAIN_RE = /^[a-zA-Z0-9-]+$/;
 
 const QuickBoost = () => {
@@ -14,10 +14,24 @@ const QuickBoost = () => {
   
   const { domains } = useBoardStore();
 
+  const [userTouchedPrice, setUserTouchedPrice] = useState(false);
+
+  const [initialPriceSet, setInitialPriceSet] = useState(false);
+
+  useEffect(() => {
+    if (domains.length > 0 && !initialPriceSet) {
+      const highest = domains
+        .filter(d => d.type === 'umumiy' && d.isPaid)
+        .reduce((max, d) => Math.max(max, d.price || 0), 0);
+      setPrice((highest >= 1000 ? highest + 1000 : 1000).toString());
+      setInitialPriceSet(true);
+    }
+  }, [domains, initialPriceSet]);
+
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await axios.post('http://localhost:8000/api/auth/google', {
+        const res = await axios.post(`${backendUrl}/api/auth/google`, {
           access_token: tokenResponse.access_token
         });
         localStorage.setItem('top3_user', JSON.stringify(res.data));
@@ -35,8 +49,8 @@ const QuickBoost = () => {
       if (pendingStr) {
         try {
           const pending = JSON.parse(pendingStr);
-          setDomain(pending.domain);
-          setPrice(pending.price);
+          if (pending.domain) setDomain(pending.domain);
+          // Do not restore price, let the highest price logic take over
           localStorage.removeItem('pending_quickboost_data');
         } catch (e) {}
       }
@@ -51,20 +65,16 @@ const QuickBoost = () => {
 
   let warning = '';
   if (domain && !domainOk) warning = 'Faqat .uz domensiz qismini kiriting (masalan: kun)';
-  else if (domainOk && !priceOk) warning = 'Narx 1000 so\'mga karrali bo\'lishi shart';
+  else if (price && !priceOk) warning = 'Narx 1000 so\'mga karrali bo\'lishi shart';
 
   // Calculate estimated rank
-  let rankHint = '';
-  if (valid) {
-    const paidDomains = domains.filter(d => d.type === 'umumiy' && d.isPaid).sort((a, b) => (b.price || 0) - (a.price || 0));
-    let estimatedRank = 1;
-    for (let i = 0; i < paidDomains.length; i++) {
-      if (priceNum > (paidDomains[i].price || 0)) {
-        break;
-      }
-      estimatedRank++;
+  const paidDomains = domains.filter(d => d.type === 'umumiy' && d.isPaid).sort((a, b) => (b.price || 0) - (a.price || 0));
+  let estimatedRank = 1;
+  for (let i = 0; i < paidDomains.length; i++) {
+    if (priceNum >= (paidDomains[i].price || 0)) {
+      break;
     }
-    rankHint = `Siz "Umumiy" taxtada taxminan ${estimatedRank}-o'rinni egallaysiz.`;
+    estimatedRank++;
   }
 
   const handleBuy = async () => {
@@ -89,7 +99,7 @@ const QuickBoost = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/domains/', {
+      const res = await fetch(`${backendUrl}/api/domains/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -114,7 +124,7 @@ const QuickBoost = () => {
       const data = await res.json();
       
       // Pay
-      const payRes = await fetch('http://localhost:8000/api/payments/init', {
+      const payRes = await fetch(`${backendUrl}/api/payments/init`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -160,34 +170,75 @@ const QuickBoost = () => {
     setDomain(value.toLowerCase());
   };
 
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrice(e.target.value);
+    setUserTouchedPrice(true);
+  };
+
+  const formatNum = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+  const STEP = 1000;
+  const minPrice = 1000;
+  const maxAbove = paidDomains.length > 0 ? (paidDomains[0].price || 0) + STEP * 5 : STEP * 10;
+
   return (
     <section id="quickboost" style={{ paddingBlock: '0 8px' }}>
       <div className="wrap">
-        <div className="board reveal in" style={{ padding: '20px 22px' }}>
-          <span className="live-preview-label" style={{ marginBottom: '14px' }}>Domeningizni yuqoriga olib chiqing</span>
+        <div className="board reveal in" style={{ padding: '24px 28px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)' }}>
+
+          {/* Dynamic headline - rank changes as price changes */}
+          <h2 className="text-2xl sm:text-3xl mb-6 text-white" style={{ fontWeight: '800' }}>
+            {estimatedRank === 1 ? (
+              <><span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent font-extrabold tracking-tight">{estimatedRank}-o'rinni</span>{' '}<span className="text-emerald-400">{formatNum(priceNum)} so'm</span>ga band qiling!</>
+            ) : (
+              <><span className="text-indigo-400 font-extrabold tracking-tight">{estimatedRank}-o'rinni</span>{' '}<span className="text-white">{formatNum(priceNum)} so'm</span>ga band qiling!</>
+            )}
+          </h2>
+
+          {/* Rank calculator hint */}
+          <p className="text-xs text-zinc-500 mb-4">
+            Narxni oshiring — o'rningiz ko'tariladi. {paidDomains.length > 0 ? `Hozirda ${paidDomains.length} ta pullik sayt bor.` : 'Hali pullik saytlar yo\'q — 1-o\'rinni oling!'}
+          </p>
+
           <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            {/* Domain input */}
             <div className="field" style={{ flex: 1.4, minWidth: '180px', margin: 0 }}>
-              <label htmlFor="boostDom">Domeningiz</label>
+              <label htmlFor="boostDom" className="text-sm text-zinc-400 mb-2 block">Domeningiz</label>
               <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface-2)' }}>
-                <input id="boostDom" type="text" placeholder="masalan: mohirdev" 
-                  style={{ border: 'none', background: 'transparent', flex: 1, padding: '10px 12px', fontSize: '14px', color: 'var(--ink)', outline: 'none', minWidth: 0 }}
+                <input id="boostDom" type="text" placeholder="masalan: mohirdev"
+                  style={{ border: 'none', background: 'transparent', flex: 1, padding: '10px 12px', fontSize: '15px', color: 'white', outline: 'none', minWidth: 0 }}
                   value={domain} onChange={handleDomainChange}
                 />
                 <span style={{ padding: '10px 12px', color: 'var(--muted)', fontWeight: 700, fontFamily: "'IBM Plex Mono'", borderLeft: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>.uz</span>
               </div>
             </div>
-            <div className="field" style={{ flex: 1, minWidth: '150px', margin: 0 }}>
-              <label htmlFor="boostPrice">Narx (so'm)</label>
-              <input id="boostPrice" type="number" min="1000" step="1000" value={price} onChange={e => setPrice(e.target.value)} />
+
+            {/* Price stepper calculator */}
+            <div className="field" style={{ minWidth: '180px', margin: 0 }}>
+              <label className="text-sm text-zinc-400 mb-2 block">Narx (so'm) — o'rni: <span className={`font-bold ${estimatedRank === 1 ? 'text-yellow-400' : 'text-indigo-400'}`}>{estimatedRank}-o'rin</span></label>
+              <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface-2)' }}>
+                <button
+                  type="button"
+                  onClick={() => setPrice(p => Math.max(minPrice, (parseInt(p)||0) - STEP).toString())}
+                  style={{ padding: '10px 14px', fontSize: '20px', color: 'var(--muted)', background: 'transparent', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+                >−</button>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700, color: 'white', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatNum(priceNum)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPrice(p => ((parseInt(p)||0) + STEP).toString())}
+                  style={{ padding: '10px 14px', fontSize: '20px', color: 'var(--muted)', background: 'transparent', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+                >+</button>
+              </div>
             </div>
-            <div style={{ flex: 1.6, minWidth: '200px', paddingBottom: '10px' }}>
-              <span id="boostRankText" style={{ fontSize: '13px', color: 'var(--ink-soft)', fontWeight: 600 }}>{rankHint}</span>
-            </div>
-            <button className="btn btn-primary" id="boostBuyBtn" disabled={!valid || loading} onClick={handleBuy}>
+
+            <button className="btn btn-primary" id="boostBuyBtn" disabled={!valid || loading} onClick={handleBuy} style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 'bold' }}>
               {loading ? 'Kutib turing...' : 'Xarid qilish'}
             </button>
           </div>
-          <div className={`warn-box ${warning ? 'show' : ''}`} id="boostWarn">⚠ <span id="boostWarnText">{warning}</span></div>
+
+          <div className={`warn-box ${warning ? 'show' : ''}`} id="boostWarn" style={{ marginTop: '12px' }}>⚠ <span id="boostWarnText">{warning}</span></div>
         </div>
       </div>
     </section>

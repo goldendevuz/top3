@@ -1,52 +1,72 @@
 import React, { useEffect, useState } from 'react';
+import { useBoardStore, DomainItem } from '../store/useBoardStore';
+import { SponsorRow } from './Board';
 
-const hashCode = (s: string) => {
-  let h = 0;
-  for(let i=0; i<s.length; i++){
-    h = ((h<<5)-h) + s.charCodeAt(i);
-    h |= 0;
+const cleanUrlDisplay = (url: string) => {
+  if (!url) return "";
+  try {
+    const u = url.startsWith('http') ? url : `https://${url}`;
+    return new URL(u).hostname.replace(/^www\./i, '');
+  } catch (e) {
+    return url;
   }
-  return Math.abs(h);
 };
 
-const faviconStyle = (dom: string) => {
-  const h = hashCode(dom);
-  const h1 = h % 360, h2 = (h1 + 46) % 360;
-  return { background: `linear-gradient(135deg, hsl(${h1} 70% 46%), hsl(${h2} 70% 36%))` };
-};
-
-const initials = (dom: string) => dom.slice(0, 2).toUpperCase();
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+const formatDateGroup = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  
+  if (d.toDateString() === today.toDateString()) return "Bugun";
+  
+  const f = d.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.');
+  if (d.toDateString() === yesterday.toDateString()) return `${f} (kecha)`;
+  
+  return f;
+};
+
 const DailyBoard = () => {
-  const [data, setData] = useState<Record<string, any[]>>({});
+  const { domains } = useBoardStore();
   const [loading, setLoading] = useState(true);
+  const [limit, setLimit] = useState(20);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/domains/daily')
-      .then(res => res.json())
-      .then(d => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(e => {
-        console.error(e);
-        setLoading(false);
-      });
-  }, []);
+    const t = setTimeout(() => setLoading(false), 800);
+    if(domains.length > 0) setLoading(false);
+    return () => clearTimeout(t);
+  }, [domains]);
 
   const buildUtmUrl = (domain: string) => {
-    const base = `https://${domain}`;
+    const base = domain.startsWith('http') ? domain : `https://${domain}`;
     const params = `utm_source=top3.uz&utm_medium=directory&utm_campaign=top3_referral`;
     return base.includes('?') ? `${base}&${params}` : `${base}?${params}`;
   };
 
   const handleLinkClick = (id: number) => {
-    fetch(`http://localhost:8000/api/domains/${id}/visit`, { method: 'POST' }).catch(() => {});
+    fetch(`/api/domains/${id}/visit`, { method: 'POST' }).catch(() => {});
   };
 
-  const dates = Object.keys(data).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Group all organic domains by date string
+  const grouped: Record<string, DomainItem[]> = {};
+  const sponsors: DomainItem[] = [];
+
+  domains.forEach(d => {
+    if (d.is_sponsored) {
+      sponsors.push(d);
+    } else {
+      const dateStr = new Date(d.addedAt).toISOString().split('T')[0];
+      if (!grouped[dateStr]) grouped[dateStr] = [];
+      grouped[dateStr].push(d);
+    }
+  });
+
+  const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  let globalRank = 0;
+  let sponsorOffset = 0;
+  let totalDisplayed = 0;
 
   return (
     <div style={{ paddingTop: '100px', minHeight: '100vh' }}>
@@ -54,92 +74,124 @@ const DailyBoard = () => {
         <div className="wrap">
           <div className="section-head reveal in">
             <div>
-              <span className="kicker">Kunlik reyting</span>
-              <h2>Pullik saytlar arxivi</h2>
-              <p>Top3 ga qo'shilgan pullik va sponsor saytlar ro'yxati kunlar kesimida.</p>
+              <span className="kicker">Barcha kunlik saytlar</span>
+              <h2>Barcha saytlar xronologiyasi</h2>
+              <p>Top3 ga har kuni qo'shiladigan pullik va bepul saytlar ro'yxati kunlar kesimida.</p>
             </div>
           </div>
 
-          <div className="board reveal in">
+          <div className="board reveal in max-w-4xl mx-auto">
             {loading ? (
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--ink)' }}>Yuklanmoqda...</div>
-            ) : dates.length === 0 ? (
+            ) : sortedDates.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-center">
-                <h3 className="text-zinc-300 font-semibold mb-2">Hozircha arxiv bo'sh!</h3>
+                <h3 className="text-zinc-300 font-semibold mb-2">Hozircha ro'yxat bo'sh!</h3>
                 <p className="text-sm text-zinc-500 max-w-sm mb-4">Birinchi bo'lib qo'shiling va loyihangizga mijoz jalb qiling.</p>
                 <button onClick={() => window.location.href = '/add'} className="bg-white text-black px-6 py-2 rounded-full font-medium text-sm hover:bg-zinc-200 transition-colors">
                   Sayt qo'shish
                 </button>
               </div>
             ) : (
-              dates.map(date => {
-                const isLive = date === todayStr;
-                const formattedDate = new Date(date).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' });
-                const domains = data[date].sort((a, b) => b.current_price - a.current_price);
+              sortedDates.map((date, dateIndex) => {
+                const groupLabel = formatDateGroup(date);
+                const isLive = groupLabel === "Bugun";
+                
+                // Sort domains within the day by clicks or price
+                const dayDomains = grouped[date].sort((a, b) => (b.clicks || 0) - (a.clicks || 0));
                 
                 return (
                   <div key={date} className="mb-12">
-                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-3">
-                      <span className="text-sm text-zinc-200">{formattedDate}</span>
-                      <span className="text-zinc-500 font-normal normal-case">— {domains.length} ta sayt</span>
+                    <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-3 px-2">
+                      <span className="text-sm text-zinc-200">{groupLabel}</span>
+                      <span className="text-zinc-500 font-normal normal-case">— {dayDomains.length} ta sayt</span>
                       <span className="flex-1 h-px bg-zinc-800"></span>
-                      {isLive && <span className="bg-red-500/20 text-red-500 px-2 py-0.5 rounded font-medium text-[10px]">Live</span>}
+                      {isLive && <span className="bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded font-medium text-[10px]">Live</span>}
                     </div>
                     
-                    <div className="bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden">
-                      {domains.map((item: any, idx: number) => {
-                        const rank = idx + 1;
-                        const rankColor = rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-zinc-300' : rank === 3 ? 'text-orange-400' : 'text-zinc-500';
-                        const isSponsor = item.is_sponsored;
+                    <div className="flex flex-col">
+                      {dayDomains.map((item, idx) => {
+                        if (totalDisplayed >= limit) return null;
                         
-                        return (
-                          <div key={item.id} className={`flex items-center gap-4 py-4 px-4 border-b border-zinc-800 transition-all hover:bg-zinc-900 ${isSponsor ? 'border border-yellow-500/30 bg-yellow-500/5' : ''}`}>
-                            <div className={`w-6 text-center font-bold ${isSponsor ? 'text-yellow-500 text-xs' : rankColor}`}>{isSponsor ? 'AD' : rank}</div>
-                            
+                        globalRank++;
+                        totalDisplayed++;
+                        const rankColor = globalRank === 1 ? 'text-yellow-500' : globalRank === 2 ? 'text-zinc-300' : globalRank === 3 ? 'text-orange-400' : 'text-zinc-500';
+                        
+                        const renderItem = (
+                          <a 
+                            key={item.id} 
+                            href={buildUtmUrl(item.dom)} 
+                            target="_blank" 
+                            rel="noopener noreferrer dofollow"
+                            onClick={() => handleLinkClick(item.id!)}
+                            className={`flex items-center justify-between p-4 border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80 transition-colors rounded-xl mb-3`}
+                          >
                             <div className="flex items-center gap-4 min-w-0 flex-1">
+                              <div className={`text-2xl sm:text-3xl font-black italic min-w-[2rem] sm:min-w-[2.5rem] text-center ${rankColor}`}>
+                                #{globalRank}
+                              </div>
                               <img 
-                                src={`https://www.google.com/s2/favicons?domain=${item.name}&sz=64`} 
+                                src={`https://www.google.com/s2/favicons?domain=${cleanUrlDisplay(item.dom)}&sz=64`} 
                                 alt="favicon" 
-                                className="w-8 h-8 rounded-md bg-zinc-800 p-1 object-contain shrink-0"
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-800 border border-zinc-700 p-1.5 object-contain shrink-0"
                               />
                               <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <a 
-                                    href={buildUtmUrl(item.name)} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer dofollow"
-                                    onClick={() => handleLinkClick(item.id)} 
-                                    className="text-zinc-100 font-semibold hover:underline truncate"
-                                  >
-                                    {item.name}
-                                  </a>
-                                  {isSponsor && <span className="bg-yellow-500/20 text-yellow-500 text-[10px] px-1.5 py-0.5 rounded font-medium border border-yellow-500/30 shrink-0">Sponsor</span>}
-                                  <span className="text-zinc-500 text-[10px] px-1.5 py-0.5 bg-zinc-800 rounded shrink-0">{item.category || "Boshqa"}</span>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <h3 className="text-base sm:text-lg font-bold text-white truncate">{cleanUrlDisplay(item.dom)}</h3>
+                                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 truncate">{item.cat || "Boshqa"}</span>
                                 </div>
-                                <div className="text-sm text-zinc-400 truncate mt-0.5">{item.description || "Tavsif yo'q"}</div>
+                                <p className="text-xs text-zinc-400 truncate max-w-[150px] sm:max-w-md">{item.desc}</p>
                               </div>
                             </div>
-
-                            <div className="hidden sm:block text-right text-sm">
-                              <b className="text-zinc-200">{fmt(item.current_price || 0)}</b> <span className="text-zinc-500 text-xs">so'm</span>
+                            <div className="flex items-center gap-4 shrink-0 pl-2">
+                              <div className="flex flex-col items-end">
+                                {item.isPaid ? (
+                                  <>
+                                    <span className="text-base sm:text-lg font-black text-white">{fmt(item.price || 0)}</span>
+                                    <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">so'm</span>
+                                  </>
+                                ) : null}
+                                <span className="text-xs text-zinc-400 mt-0.5">{fmt(item.clicks || 0)} <span className="text-zinc-500">o'tish</span></span>
+                              </div>
+                              <div className="hidden sm:flex items-center justify-center px-4 py-2 rounded-lg text-xs font-bold transition-colors bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-white">
+                                O'tish →
+                              </div>
                             </div>
+                          </a>
+                        );
 
-                            <a 
-                              href={buildUtmUrl(item.name)} 
-                              target="_blank" 
-                              rel="noopener noreferrer dofollow"
-                              onClick={() => handleLinkClick(item.id)} 
-                              className="bg-white text-black hover:bg-zinc-200 rounded-full px-5 py-1.5 text-sm font-medium transition-colors shrink-0 shadow-sm"
-                            >
-                              O'tish
-                            </a>
-                          </div>
+                        // Insert sponsor slot every 10 items
+                        let sponsorRender = null;
+                        if (globalRank % 10 === 0 && sponsors.length > 0) {
+                          const offset = sponsorOffset;
+                          sponsorOffset++;
+                          sponsorRender = (
+                            <div key={`sponsor-row-${globalRank}`} className="animate-fadeInUp mb-4 mt-2">
+                              <SponsorRow sponsors={sponsors} startIndex={offset} />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <React.Fragment key={`frag-${item.id}`}>
+                            {renderItem}
+                            {sponsorRender}
+                          </React.Fragment>
                         );
                       })}
                     </div>
                   </div>
                 );
               })
+            )}
+
+            {!loading && Object.values(grouped).reduce((acc, curr) => acc + curr.length, 0) > limit && (
+              <button 
+                onClick={() => setLimit(prev => prev + 20)}
+                className="mt-2 mx-auto bg-zinc-900/40 hover:bg-zinc-800/50 text-zinc-200 border border-zinc-500/30 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-zinc-900/50 flex items-center gap-2"
+              >
+                Ko'proq yuklash
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
             )}
           </div>
         </div>
