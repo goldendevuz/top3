@@ -159,6 +159,7 @@ export const AddDomain = () => {
             setCat('—');
             setDesc('—');
           }
+        }
       } else {
         setCat('—');
         setDesc('—');
