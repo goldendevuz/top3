@@ -1,18 +1,14 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import ConfirmModal from './ConfirmModal';
-import { categories, categoryConfig } from './Categories';
-import { useBoardStore } from '../store/useBoardStore';
-import { useAuthStore } from '../store/useAuthStore';
 
 const LINK_RE = /^(https?:\/\/)?([a-z0-9-]+)(\.[a-z0-9-]+)+([/?#].*)?$/i;
 const SUBDOMAIN_RE = /^[a-z0-9-]+$/i;
 
 const formatNum = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+<<<<<<< Updated upstream
 const cleanDomainName = (val: string) => {
   let cleaned = val.replace(/^https?:\/\//i, '');
   cleaned = cleaned.replace(/^www\./i, '');
@@ -21,34 +17,35 @@ const cleanDomainName = (val: string) => {
   // Remove any character that is NOT a-z, 0-9, or hyphen
   cleaned = cleaned.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase();
   return cleaned;
+=======
+const hashCode = (s: string) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h) + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+>>>>>>> Stashed changes
 };
 
-const categoryIcons: Record<string, string> = {
-  "Onlayn do'konlar va Savdo": "🛒",
-  "Ta'lim va O'quv markazlari": "📚",
-  "Biznes, Moliya va Huquq": "💼",
-  "IT va Dasturlash": "💻",
-  "Yangiliklar va OAV (Media)": "📰",
-  "Tibbiyot va Salomatlik": "🏥",
-  "Ko'chmas mulk va Qurilish": "🏠",
-  "Sayohat va Turizm": "✈️",
-  "Xizmat ko'rsatish va Agentliklar": "🛠",
-  "Marketing va Reklama": "🎯",
-  "Ish, Karyera va Vakansiyalar": "🤝",
-  "Ijtimoiy tarmoqlar va Bloging": "📱",
-  "Dizayn va Kreativ": "🎨",
-  "O'yinlar va Ko'ngilochar": "🎮",
-  "Neyrotarmoqlar va AI": "🤖",
-  "Foydali vositalar (Tools)": "⚙️",
-  "Boshqa": "📌"
+const faviconStyle = (dom: string) => {
+  const h = hashCode(dom);
+  const h1 = h % 360, h2 = (h1 + 46) % 360;
+  return { background: `linear-gradient(135deg, hsl(${h1} 70% 46%), hsl(${h2} 70% 36%))` };
 };
+const initials = (dom: string) => dom.slice(0, 2).toUpperCase();
+
 
 export const AddDomain = () => {
-  const [tier, setTier] = useState<'paid'>('paid');
+  const [tier, setTier] = useState<'seo' | 'paid' | 'sponsor'>('seo');
   const [placement, setPlacement] = useState<'umumiy' | 'bugun'>('umumiy');
   const [domain, setDomain] = useState('');
-  const [price, setPrice] = useState('1');
+  const [price, setPrice] = useState('1000');
   
+  const [customSponsor, setCustomSponsor] = useState(false);
+  const [customDesc, setCustomDesc] = useState('');
+  const [customCat, setCustomCat] = useState('');
+
   const [cat, setCat] = useState('—');
   const [desc, setDesc] = useState('—');
   const [fetching, setFetching] = useState(false);
@@ -57,18 +54,18 @@ export const AddDomain = () => {
   const [submitError, setSubmitError] = useState('');
   const [redirectWarning, setRedirectWarning] = useState('');
   const [uzRedirectData, setUzRedirectData] = useState<{has: boolean, variant: string}>({has: false, variant: ''});
-  const [competitors, setCompetitors] = useState<{board_type: string, price: number, is_sponsored?: boolean}[]>([]);
-
-
-  const [confirmState, setConfirmState] = useState(false);
+  const [competitors, setCompetitors] = useState<{board_type: string, price: number}[]>([]);
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const categories = ["Ta'lim", "Onlayn-do'kon", "IT va Dasturlash", "Media", "Moliya", "Tibbiyot", "Xizmatlar", "Ko'ngilochar", "Sayohat", "Boshqa"];
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await axios.post('/api/auth/google', {
+        const res = await axios.post('http://localhost:8000/api/auth/google', {
           access_token: tokenResponse.access_token
         });
-        useAuthStore.getState().login(res.data.user || res.data, res.data.token || tokenResponse.access_token);
+        localStorage.setItem('top3_user', JSON.stringify(res.data));
+        window.location.reload();
       } catch (err) {
         console.error('Google login error:', err);
       }
@@ -85,36 +82,24 @@ export const AddDomain = () => {
           setTier(pending.tier);
           setPlacement(pending.placement);
           setDomain(pending.domain);
-          setPrice((pending.price / 1000).toString());
+          setPrice(pending.price);
+          setCustomSponsor(pending.customSponsor);
+          setCustomDesc(pending.customDesc);
+          setCustomCat(pending.customCat);
           localStorage.removeItem('pending_domain_data');
         } catch (e) {}
       }
     }
   }, []);
 
-  const { domains } = useBoardStore();
-  
   useEffect(() => {
-    setCompetitors(domains.map((d: any) => ({ 
-      board_type: d.type || 'umumiy', 
-      price: d.price || 0,
-      is_sponsored: !!d.is_sponsored
-    })));
-  }, [domains]);
-
-  // Auto-calculate required price for 1st place
-  useEffect(() => {
-    const currentBoardType = placement === 'bugun' ? 'bugun' : 'umumiy';
-    const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0 && !c.is_sponsored);
-    
-    let maxPrice = 0;
-    if (relevant.length > 0) {
-      maxPrice = Math.max(...relevant.map(c => c.price));
-    }
-    
-    const needed = (maxPrice / 1000) + 1; // +1000 sum to beat the top
-    setPrice(needed.toString());
-  }, [tier, placement, competitors.length]);
+    fetch('http://localhost:8000/api/domains/')
+      .then(res => res.json())
+      .then(data => {
+        setCompetitors(data.map((d: any) => ({ board_type: d.board_type, price: d.price })));
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     setRedirectWarning('');
@@ -134,18 +119,41 @@ export const AddDomain = () => {
     const check = setTimeout(async () => {
       setFetching(true);
       setApiError(false);
-      const isOk = SUBDOMAIN_RE.test(domain);
+      const isOk = tier === 'sponsor' ? LINK_RE.test(domain) : SUBDOMAIN_RE.test(domain);
       setDomainOk(isOk);
       
       if (isOk) {
-        try {
-          const target = domain + '.uz';
-          const userStr = localStorage.getItem('top3_user');
-          const headers: Record<string, string> = {};
-          if (userStr) {
-            const user = JSON.parse(userStr);
-            headers['x-user-id'] = user.id.toString();
+        if (!(tier === 'sponsor' && customSponsor)) {
+          try {
+            const target = tier === 'sponsor' ? domain.replace(/^https?:\/\//i, "").split("/")[0] : domain + '.uz';
+            const userStr = localStorage.getItem('top3_user');
+            const headers: Record<string, string> = {};
+            if (userStr) {
+              const user = JSON.parse(userStr);
+              headers['x-user-id'] = user.id.toString();
+            }
+            const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
+            if (!res.ok) throw new Error('API error');
+            const data = await res.json();
+            setCat(data.category || 'Boshqa');
+            setDesc(data.description || 'Ma\'lumot topilmadi');
+            setUzRedirectData({
+              has: data.has_uz_redirect || false,
+              variant: data.uz_variant || ''
+            });
+            if (data.is_redirected && tier === 'seo') {
+              setRedirectWarning("Bu domen boshqa manzilga yo'naltirilmoqda (Redirect). Redirect orqali sayt ma'lumotlarini olish faqat Pullik tarifda mavjud. Siz pullik bo'limga o'tkazildingiz.");
+              setTier('paid');
+            } else if (!data.is_redirected) {
+              setRedirectWarning('');
+            }
+          } catch (err) {
+            console.error(err);
+            setApiError(true);
+            setCat('—');
+            setDesc('—');
           }
+<<<<<<< Updated upstream
           const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -170,6 +178,8 @@ export const AddDomain = () => {
           setDomainOk(false);
           setCat('—');
           setDesc('—');
+=======
+>>>>>>> Stashed changes
         }
       } else {
         setCat('—');
@@ -179,46 +189,76 @@ export const AddDomain = () => {
     }, 700);
 
     return () => clearTimeout(check);
-  }, [domain, tier]);
+  }, [domain, tier, customSponsor]);
 
-  const inputValue = parseInt(price, 10) || 1;
-  const priceNum = inputValue * 1000;
-  const priceOk = inputValue >= 1 && inputValue <= 100;
+  const priceNum = parseInt(price, 10) || 0;
+  const priceOk = priceNum >= 1000 && priceNum % 1000 === 0;
 
   const getPredictedRank = () => {
-    const currentBoardType = placement === 'bugun' ? 'bugun' : 'umumiy';
-    // For rank prediction, we only compare against other ORGANIC PAID domains (not sponsored)
-    const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0 && !c.is_sponsored);
+    if (tier === 'seo') return -1;
+    const isPaid = tier === 'paid' || tier === 'sponsor';
+    if (!isPaid) return -1;
+    const currentBoardType = tier === 'sponsor' ? 'umumiy' : (placement === 'bugun' ? 'bugun' : 'umumiy');
+    const relevant = competitors.filter(c => c.board_type === currentBoardType && c.price > 0);
     relevant.push({ board_type: 'temp', price: priceNum });
-    relevant.sort((a, b) => (b.price || 0) - (a.price || 0));
+    relevant.sort((a, b) => b.price - a.price);
     return relevant.findIndex(c => c.board_type === 'temp') + 1;
   };
 
-  const valid = domainOk && !fetching && priceOk;
+  const isDescMissing = tier !== 'sponsor' && !fetching && domainOk && desc === "Ma'lumot topilmadi";
+  const valid = domainOk && !apiError && !isDescMissing && (tier === 'seo' || priceOk);
   
-  const displayDesc = desc;
-  const displayCat = cat;
+  const displayDesc = tier === 'sponsor' ? customDesc : desc;
+  const displayCat = tier === 'sponsor' ? customCat : cat;
 
-  let warning = submitError;
+  let warning = '';
   if (redirectWarning) {
     warning = redirectWarning;
-  } else if (domain && !domainOk) {
-    warning = "Iltimos, to'g'ri nom kiriting (probelsiz, bo'shliqsiz, faqat lotin harflari, sonlar va chiziqcha).";
-  } else if (!warning) {
-    if (domainOk && !priceOk) {
-      warning = "Narx 1 000 so'mdan 100 000 so'mgacha bo'lishi shart.";
+  } else if (domain && !fetching && !domainOk) {
+    if (tier !== 'sponsor') {
+      if (domain.includes('.')) {
+        warning = ".uz avtomatik qo'shiladi, faqat sayt nomini kiriting (masalan: shats)";
+      } else {
+        warning = "Faqat lotin harflari va raqamlar qabul qilinadi.";
+      }
+    } else {
+      warning = "Noto'g'ri havola formati.";
     }
+  } else if ((tier === 'paid' || tier === 'sponsor') && domainOk && !priceOk) {
+    warning = "Narx 1000 so'mga karrali bo'lishi shart.";
   }
+
+  useEffect(() => {
+    if (apiError || submitError) {
+      if (apiError) toast.error("Sayt topilmadi. Iltimos, domenni to'g'ri kiriting.", { id: 'apiError' });
+      if (submitError) toast.error(submitError, { id: 'submitError' });
+      
+      const timer = setTimeout(() => {
+        setApiError(false);
+        setSubmitError('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [apiError, submitError]);
 
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    // 1. QAT'IY VALIDATSIYA VA BLOKLASH
+    const isValid = /^[a-zA-Z0-9-]+$/.test(domain); 
+    
+    if (!isValid) {
+      toast.error("Iltimos, faqat bitta so'z kiriting (probel va nuqtasiz)!");
+      setLoading(false);
+      return; // DASTURNI SHU YERDA QAT'IY TO'XTATISH!
+    }
+
     if (!valid) return;
     
     const userStr = localStorage.getItem('top3_user');
     if (!userStr) {
       localStorage.setItem('pending_domain_data', JSON.stringify({
-        tier, placement, domain, price
+        tier, placement, domain, price, customSponsor, customDesc, customCat
       }));
       login();
       return;
@@ -226,46 +266,36 @@ export const AddDomain = () => {
     const user = JSON.parse(userStr);
     const isAdmin = user.email === 'yunusovabdulmajid@gmail.com';
 
-    if (isAdmin && tier === 'paid' && !confirmState) {
-      setConfirmState(true);
-      return;
+    if (isAdmin && tier === 'paid') {
+      const confirmMsg = "Siz ushbu domenni ODDIY PULLIK ro'yxatga qo'shyapsiz. Ehtimol uni Sponsor qilmoqchidirsiz? Davom etishni tasdiqlaysizmi?";
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
     }
 
-    await executeSubmit(user);
-  };
-
-  const executeSubmit = async (user: any) => {
-    setConfirmState(false);
     setLoading(true);
     try {
-      const boardType = placement === 'bugun' ? 'bugun' : 'umumiy';
+      const isPaid = tier === 'paid' || tier === 'sponsor';
+      const boardType = tier === 'seo' ? 'ochiq' : (placement === 'bugun' ? 'bugun' : 'umumiy');
       
-      const token = localStorage.getItem('token');
-
       const res = await fetch('http://localhost:8000/api/domains/', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'X-User-Id': user.id.toString(),
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          'X-User-Id': user.id.toString()
         },
         body: JSON.stringify({
-          name: domain + '.uz',
+          name: tier === 'sponsor' ? domain.replace(/^https?:\/\//i, "").split("/")[0] : domain + '.uz',
           board_type: boardType,
-          price: priceNum,
+          price: isPaid ? priceNum : 0,
           description: displayDesc !== '—' ? displayDesc : undefined,
           category: displayCat !== '—' ? displayCat : undefined,
           user_id: user.id,
-          is_sponsored: false
+          is_sponsored: tier === 'sponsor'
         })
       });
       
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem('top3_user');
-          localStorage.removeItem('token');
-          throw new Error("Sessiya muddati tugagan. Sahifani yangilab, qayta kiring.");
-        }
         const errorData = await res.json().catch(() => ({}));
         if (errorData.detail) {
           throw new Error(errorData.detail);
@@ -275,30 +305,29 @@ export const AddDomain = () => {
       
       const domainRes = await res.json();
 
-      const payRes = await fetch('http://localhost:8000/api/payments/init', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-User-Id': user.id.toString(),
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          domain_id: domainRes.id,
-          amount: priceNum,
-          user_id: user.id
-        })
-      }).then(r => r.json());
+      if (isPaid) {
+        const payRes = await fetch('http://localhost:8000/api/payments/init', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Id': user.id.toString()
+          },
+          body: JSON.stringify({
+            domain_id: domainRes.id,
+            amount: priceNum,
+            user_id: user.id
+          })
+        }).then(r => r.json());
 
-      if (payRes.pay_url) {
-        window.location.href = payRes.pay_url;
-        return;
+        if (payRes.pay_url) {
+          window.location.href = payRes.pay_url;
+          return;
+        }
       }
       
-      toast.success("Muvaffaqiyatli qo'shildi!");
-      setTimeout(() => {
-        window.location.href = '#board';
-        window.location.reload();
-      }, 1500);
+      alert("Muvaffaqiyatli qo'shildi!");
+      window.location.href = '#board';
+      window.location.reload();
       
     } catch(err: any) {
       console.error(err);
@@ -309,124 +338,141 @@ export const AddDomain = () => {
       } else {
         setSubmitError("Xatolik yuz berdi. Domen band bo'lishi mumkin.");
       }
+      return;
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (/\s/.test(value) || (!/^[a-zA-Z0-9-]*$/.test(value) && tier !== 'sponsor')) {
+      toast.error("Faqat bitta so'z yozing! Probel taqiqlangan.");
+      setDomain("");
+      return;
+    }
+    
+    setDomain(value.toLowerCase());
+  };
+
   return (
-    <section id="add" className="py-8 md:py-12 flex flex-col items-center justify-center w-full gap-6">
-      
-      {/* DYNAMIC HEADER (RANK CALCULATOR) */}
-      <div className="w-full text-center px-4">
-        <h1 className="text-center text-4xl md:text-5xl font-bold text-white transition-all tracking-tight">
-          <span className="text-indigo-400">{getPredictedRank()}</span>-o'rinni <span>{formatNum(inputValue)} 000</span> so'mga band qiling!
-        </h1>
-      </div>
-
-      {/* 3-QAVAT: INLINE FORM */}
-      <div className="flex flex-row items-center justify-center gap-2 w-full max-w-3xl px-4">
-        <div className="flex-1 h-14 relative flex items-center bg-slate-800 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
-          <input 
-            type="text" 
-            value={domain} 
-            onChange={e => setDomain(cleanDomainName(e.target.value))} 
-            placeholder="Sayt nomi (masalan: kitob)"
-            className="w-full h-full bg-transparent outline-none px-4 text-white placeholder-slate-500 font-medium" 
-          />
-          <div className="px-4 text-slate-400 font-bold bg-slate-800/80 h-full flex items-center">.uz</div>
-        </div>
-        
-        <div className="w-32 md:w-36 h-14 relative flex flex-row items-center bg-slate-800 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow text-white font-mono text-lg font-bold">
-          <input 
-            type="number" 
-            min="1"
-            max="100"
-            step="1" 
-            value={price} 
-            onChange={e => {
-              let val = e.target.value.replace(/\D/g, '');
-              if (val !== '' && parseInt(val, 10) > 100) val = '100';
-              setPrice(val);
-            }}
-            onBlur={() => {
-              let p = parseInt(price, 10);
-              if (isNaN(p) || p < 1) setPrice("1");
-              else if (p > 100) setPrice("100");
-              else setPrice(p.toString());
-            }}
-            className="w-full h-full bg-transparent outline-none pl-4 pr-0.5 text-right placeholder-slate-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            placeholder="1"
-          />
-          <span className="pr-4 py-4 text-slate-400 whitespace-nowrap bg-transparent flex items-center select-none pointer-events-none"> 000</span>
-        </div>
-
-        <button 
-          disabled={!valid || loading}
-          onClick={handleSubmit}
-          className="h-14 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-        >
-          {loading ? "Kuting..." : "Xarid qilish"}
-        </button>
-      </div>
-
-      {/* SEO OVERRIDE */}
-      {domainOk && !fetching && desc !== '—' && (
-        <div className="w-full max-w-3xl px-4 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-slate-300 font-medium mb-1 ml-1 text-sm">SEO Kategoriya</label>
-            <select 
-              value={cat} 
-              onChange={e => setCat(e.target.value)}
-              className="w-full h-12 bg-slate-800 rounded-xl border border-slate-700 px-4 text-white focus:outline-none focus:border-indigo-500 text-sm"
-            >
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="flex-[2]">
-            <label className="block text-slate-300 font-medium mb-1 ml-1 text-sm">SEO Tavsif (Faqat o'qish uchun)</label>
-            <input 
-              type="text"
-              value={desc}
-              readOnly={true}
-              className="w-full h-12 bg-slate-800/50 rounded-xl border border-slate-700/50 px-4 text-slate-400 focus:outline-none text-sm cursor-not-allowed"
-              title={desc}
-            />
+    <section id="add">
+      <div className="wrap">
+        <div className="section-head reveal in">
+          <div>
+            <span className="kicker">Qo'shish</span>
+            <h2>Saytingizni ro'yxatga qo'shing</h2>
+            <p>Bu — maket, hech narsa saqlanmaydi. Pastdagi jonli oldindan ko'rish tanlagan bo'limingiz ichida qaysi o'rinni olishingizni ko'rsatadi.</p>
           </div>
         </div>
-      )}
+        <div className="add-panel reveal in bg-zinc-950 p-6 md:p-8 rounded-2xl border border-zinc-800 shadow-2xl max-w-2xl mx-auto text-zinc-100">
+          <div>
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Domen (faqat nomi)</label>
+              <div className="flex items-stretch border-b border-zinc-700 bg-zinc-900/50 hover:bg-zinc-900 transition-colors rounded-t-md focus-within:border-white focus-within:bg-zinc-900">
+                <input 
+                  type="text" 
+                  value={domain} 
+                  onChange={handleDomainChange} 
+                  placeholder="masalan: kitob"
+                  className="flex-1 bg-transparent border-none px-4 py-3 text-zinc-100 outline-none placeholder:text-zinc-600"
+                />
+                <div className="px-4 bg-transparent text-zinc-500 font-mono font-medium flex items-center justify-center border-l border-zinc-800">
+                  .uz
+                </div>
+              </div>
+            </div>
+            
+            {warning && (
+              <div className="text-red-400 text-sm mb-4">
+                {warning}
+              </div>
+            )}
 
-      {/* WARNINGS / ALERTS */}
-      <div className="flex flex-col items-center gap-3 w-full max-w-3xl px-4">
-        <div className={`warn-box ${warning ? 'show' : ''} !static !mt-0 w-full text-center rounded-xl`}>
-          ⚠ {warning}
-        </div>
+            {uzRedirectData.has && (
+              <div className="bg-orange-500/10 border border-orange-500/20 text-orange-400 p-4 rounded-xl flex flex-col gap-3 mb-6 text-sm">
+                <div>💡 Ushbu saytning mahalliy .uz versiyasi ({uzRedirectData.variant}) mavjud. Loyiha sifati uchun .uz domenini qo'shganingiz ma'qul!</div>
+                <button 
+                  onClick={() => {
+                    const base = uzRedirectData.variant.replace('.uz', '');
+                    setDomain(base);
+                  }}
+                  className="bg-orange-500 text-black px-4 py-1.5 rounded-full font-medium hover:bg-orange-400 transition-colors self-start"
+                >
+                  Buni .uz ga o'zgartirish
+                </button>
+              </div>
+            )}
 
-        {uzRedirectData.has && (
-          <div className="warn-box show !static !mt-0 w-full text-center rounded-xl" style={{ background: 'rgba(255, 165, 0, 0.1)', color: 'orange', borderColor: 'orange', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>💡 Ogohlantirish: Ushbu saytning mahalliy .uz versiyasi ({uzRedirectData.variant}) mavjud va u aynan shu saytga yo'naltirmoqda. Loyiha sifati uchun .uz domenini qo'shganingiz ma'qulroq!</div>
+
+
             <button 
-              onClick={() => {
-                const base = uzRedirectData.variant.replace('.uz', '');
-                setDomain(base);
-              }}
-              className="bg-orange-500 hover:bg-orange-400 text-slate-900 font-bold px-6 py-2 rounded-full mx-auto transition-colors"
+              disabled={!valid || loading}
+              onClick={handleSubmit}
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14px', marginTop: '14px' }}
             >
-              Buni .uz ga o'zgartirish
+              {loading ? "Kuting..." : "Ro'yxatga qo'shish"}
             </button>
           </div>
-        )}
-      </div>
 
-      <ConfirmModal 
-        isOpen={confirmState}
-        title="Domenni tasdiqlash"
-        message="Siz ushbu domenni ODDIY PULLIK ro'yxatga qo'shyapsiz. Ehtimol uni Sponsor qilmoqchidirsiz? Davom etishni tasdiqlaysizmi?"
-        onConfirm={() => executeSubmit(JSON.parse(localStorage.getItem('top3_user')!))}
-        onCancel={() => setConfirmState(false)}
-        confirmText="Davom etish"
-      />
+          <div className="w-full max-w-2xl mt-8">
+            <span className="live-preview-label block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Jonli oldindan ko'rish</span>
+            <div id="previewRow" className="w-full">
+              <PreviewRow tier={tier} placement={placement} domain={tier === 'sponsor' ? domain || "domen.uz" : (domain ? domain + '.uz' : "domen.uz")} desc={displayDesc} cat={cat} price={priceNum} valid={domainOk} />
+            </div>
+            <div className="preview-hint mt-2 text-xs text-zinc-500">
+              "Ochiq" ro'yxat oxiriga tushasiz.
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 };
 
+const PreviewRow = ({ domain, desc, cat, valid }: any) => {
+  const [imgError, setImgError] = React.useState(false);
+  React.useEffect(() => setImgError(false), [domain]);
+
+  return (
+    <div className="flex flex-row items-center justify-between w-full p-4 bg-zinc-900 rounded-lg border border-zinc-800 gap-4">
+      
+      {/* CHAP QISM */}
+      <div className="flex items-center gap-4 min-w-0 flex-1">
+        <div className="font-bold text-zinc-500 w-6 text-center text-xs uppercase tracking-wider shrink-0">new</div>
+        
+        {!imgError ? (
+          <img 
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
+            onError={() => setImgError(true)}
+            className="w-8 h-8 rounded-md bg-zinc-800 p-1 object-contain shrink-0"
+            alt="favicon"
+          />
+        ) : (
+          <span className="w-8 h-8 rounded-md shrink-0 flex items-center justify-center text-xs font-bold text-white" style={faviconStyle(domain)}>{initials(domain)}</span>
+        )}
+        
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-100 font-semibold truncate">{domain}</span>
+            <span className="text-zinc-500 text-[10px] px-1.5 py-0.5 bg-zinc-800 rounded shrink-0">{cat !== '—' ? cat : "Boshqa"}</span>
+          </div>
+          <div className="text-sm text-zinc-400 truncate mt-0.5">{desc !== '—' ? desc : "Ma'lumotlar kutilmoqda..."}</div>
+        </div>
+      </div>
+      
+      {/* O'NG QISM */}
+      <div className="flex items-center gap-4 shrink-0">
+        <div className="hidden sm:block text-right text-sm">
+          <b className="text-zinc-200">hozir</b> <span className="text-zinc-500 text-xs">qo'shiladi</span>
+        </div>
+        <span className="bg-white text-black rounded-full px-5 py-2 text-sm font-medium shrink-0 cursor-not-allowed opacity-80">
+          O'tish &rarr;
+        </span>
+      </div>
+      
+    </div>
+  );
+};

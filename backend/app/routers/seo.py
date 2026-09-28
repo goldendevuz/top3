@@ -16,25 +16,7 @@ if gemini_api_key:
     genai.configure(api_key=gemini_api_key)
 
 def determine_category(text: str) -> str:
-    categories = [
-        "Onlayn do'konlar va Savdo",
-        "Ta'lim va O'quv markazlari",
-        "Biznes, Moliya va Huquq",
-        "IT va Dasturlash",
-        "Yangiliklar va OAV (Media)",
-        "Tibbiyot va Salomatlik",
-        "Ko'chmas mulk va Qurilish",
-        "Sayohat va Turizm",
-        "Xizmat ko'rsatish va Agentliklar",
-        "Marketing va Reklama",
-        "Ish, Karyera va Vakansiyalar",
-        "Ijtimoiy tarmoqlar va Bloging",
-        "Dizayn va Kreativ",
-        "O'yinlar va Ko'ngilochar",
-        "Neyrotarmoqlar va AI",
-        "Foydali vositalar (Tools)",
-        "Boshqa"
-    ]
+    categories = ["Ta'lim", "Onlayn-do'kon", "IT va Dasturlash", "Media", "Moliya", "Tibbiyot", "Xizmatlar", "Ko'ngilochar", "Sayohat", "Boshqa"]
     
     if gemini_api_key:
         try:
@@ -57,46 +39,20 @@ def determine_category(text: str) -> str:
 
     # Fallback
     text = text.lower()
-    if re.search(r'\b(shop|bozor|do\'kon|savdo|buy|sotib|market|magazin|internet-magazin|sotish)\b', text):
-        return "Onlayn do'konlar va Savdo"
+    if re.search(r'\b(shop|bozor|do\'kon|savdo|buy|sotib)\b', text):
+        return "Onlayn-do'kon"
     if re.search(r'\b(edu|maktab|ta\'lim|kurs|o\'qish|school)\b', text):
-        return "Ta'lim va O'quv markazlari"
-    if re.search(r'\b(biznes|moliya|huquq|bank|finance|law|to\'lov|tolov|pay|kredit|invest|sug\'urta)\b', text):
-        return "Biznes, Moliya va Huquq"
-    if re.search(r'\b(it|dasturlash|code|software|tech|developer|sun\'iy intellekt|ai|kompyuter|aloqa|telekom|sip|raqam|texnologiya|avtomatizatsiya|internet|provayder)\b', text):
-        return "IT va Dasturlash"
-    if re.search(r'\b(news|yangiliklar|xabarlar|media)\b', text):
-        return "Yangiliklar va OAV (Media)"
-    if re.search(r'\b(tibbiyot|salomatlik|shifo|med|doctor|health)\b', text):
-        return "Tibbiyot va Salomatlik"
-    if re.search(r'\b(uy|ko\'chmas|mulk|qurilish|build|real estate|house)\b', text):
-        return "Ko'chmas mulk va Qurilish"
-    if re.search(r'\b(taksi|restoran|xizmat|service|xizmatlar|agency)\b', text):
-        return "Xizmat ko'rsatish va Agentliklar"
-    if re.search(r'\b(sayohat|turizm|travel|tour)\b', text):
-        return "Sayohat va Turizm"
-    if re.search(r'\b(marketing|reklama|ad|pr)\b', text):
-        return "Marketing va Reklama"
-    if re.search(r'\b(ish|vakansiya|karyera|job|work)\b', text):
-        return "Ish, Karyera va Vakansiyalar"
-    if re.search(r'\b(ijtimoiy|blog|social)\b', text):
-        return "Ijtimoiy tarmoqlar va Bloging"
-    if re.search(r'\b(dizayn|kreativ|design|art)\b', text):
-        return "Dizayn va Kreativ"
-    if re.search(r'\b(game|o\'yin|sport|ko\'ngilochar|fun)\b', text):
-        return "O'yinlar va Ko'ngilochar"
-    if re.search(r'\b(ai|neyrotarmoq|bot|artificial intelligence)\b', text):
-        return "Neyrotarmoqlar va AI"
-    if re.search(r'\b(tool|vosita|utility)\b', text):
-        return "Foydali vositalar (Tools)"
+        return "Ta'lim"
+    if re.search(r'\b(news|yangiliklar|xabarlar|media|blog)\b', text):
+        return "Media"
+    if re.search(r'\b(taksi|restoran|xizmat|service|xizmatlar)\b', text):
+        return "Xizmatlar"
+    if re.search(r'\b(game|o\'yin|sport)\b', text):
+        return "Ko'ngilochar"
     return "Boshqa"
 async def fetch_seo(domain: str, is_admin: bool = False):
     # Ensure URL starts with http:// or https://
     url = domain if domain.startswith("http") else f"https://{domain}"
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
     
     desc = "Ma'lumot topilmadi"
     is_redirected = False
@@ -108,7 +64,7 @@ async def fetch_seo(domain: str, is_admin: bool = False):
         base = host.rsplit(".", 1)[0]
         uz_variant = f"{base}.uz"
         try:
-            async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
+            async with httpx.AsyncClient(timeout=3.0) as client:
                 res_uz = await client.get(f"http://{uz_variant}", follow_redirects=True)
                 final_url = str(res_uz.url)
                 if host in final_url:
@@ -118,6 +74,7 @@ async def fetch_seo(domain: str, is_admin: bool = False):
 
     success = False
     try:
+<<<<<<< Updated upstream
         async with httpx.AsyncClient(timeout=3.0, headers=headers) as client:
             res = await client.get(url, follow_redirects=True)
             success = True
@@ -161,6 +118,26 @@ async def fetch_seo(domain: str, is_admin: bool = False):
                 
     if not success:
         from fastapi import HTTPException
+=======
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            res = await client.get(url, follow_redirects=True)
+            res.raise_for_status()
+            
+            if len(res.history) > 0:
+                is_redirected = True
+                
+            soup = BeautifulSoup(res.text, 'html.parser')
+            meta_desc = soup.find("meta", attrs={"name": "description"})
+            if meta_desc and meta_desc.get("content"):
+                desc = meta_desc["content"].strip()
+                if not desc:
+                    desc = "Ma'lumot topilmadi"
+            else:
+                title = soup.find("title")
+                if title and title.text:
+                    desc = title.text.strip()
+    except Exception:
+>>>>>>> Stashed changes
         raise HTTPException(status_code=400, detail="Sayt mavjud emas yoki ishlamayapti")
 
     cat_text = domain + " " + desc
@@ -177,10 +154,6 @@ async def fetch_seo(domain: str, is_admin: bool = False):
 
 @router.get("/fetch")
 async def fetch_seo_api(domain: str, request: Request, db: AsyncSession = Depends(get_db)):
-    domain_clean = domain.strip()
-    if not domain_clean or " " in domain_clean or "." not in domain_clean:
-        raise HTTPException(status_code=400, detail="Noto'g'ri havola")
-        
     is_admin = False
     user_id = request.headers.get("x-user-id")
     if user_id:
