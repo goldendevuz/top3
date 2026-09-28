@@ -7,6 +7,7 @@ import Hero from './components/Hero';
 import Board from './components/Board';
 import { AddDomain } from './components/AddDomain';
 import { AddFreeDomain } from './components/AddFreeDomain';
+import { AddSponsor } from './components/AddSponsor';
 import { SEO } from './components/SEO';
 import { useBoardStore } from './store/useBoardStore';
 import DailyBoard from './components/DailyBoard';
@@ -144,6 +145,16 @@ const AddFreePage = () => (
   </div>
 );
 
+const SponsorPage = () => (
+  <div className="flex flex-col min-h-screen bg-[#0A0E1D]">
+    <SEO title="Sponsor o'rni xarid qilish — Top3" />
+    <Header />
+    <main className="flex-1">
+      <AddSponsor />
+    </main>
+  </div>
+);
+
 const DailyPage = () => (
   <div className="flex flex-col min-h-screen">
     <SEO title="Kunlik reytinglar — Top3" />
@@ -219,6 +230,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/add-free" element={<AddFreePage />} />
+          <Route path="/sponsor" element={<SponsorPage />} />
           <Route path="/daily" element={<DailyPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/category/:name" element={<CategoryDetailPage />} />

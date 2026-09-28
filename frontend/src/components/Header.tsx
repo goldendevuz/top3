@@ -83,6 +83,7 @@ const Header = () => {
           <Link to="/" className={location.pathname === '/' ? 'text-indigo-400' : ''}>Asosiy</Link>
           <Link to="/daily" className={location.pathname === '/daily' ? 'text-indigo-400' : ''}>Kunlik</Link>
           <Link to="/add-free" className={location.pathname === '/add-free' ? 'text-indigo-400' : ''}>Bepul qo'shish</Link>
+          <Link to="/sponsor" className={location.pathname === '/sponsor' ? 'text-amber-400' : 'text-amber-400/80 hover:text-amber-400'}>Sponsor bo'lish</Link>
           {isHome && (
             <>
               <a href="#how">Qanday ishlaydi</a>
