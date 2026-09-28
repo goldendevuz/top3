@@ -132,10 +132,13 @@ export const AddDomain = () => {
               headers['x-user-id'] = user.id.toString();
             }
             const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
-            if (!res.ok) throw new Error('API error');
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.detail || "Sayt mavjud emas yoki ishlamayapti");
+            }
             const data = await res.json();
             setCat(data.category || 'Boshqa');
-            setDesc(data.description || 'Ma\'lumot topilmadi');
+            setDesc((data.description === "Ma'lumot topilmadi" || !data.description) ? "Sayt tavsifi kiritilmagan" : data.description);
             setUzRedirectData({
               has: data.has_uz_redirect || false,
               variant: data.uz_variant || ''
@@ -143,40 +146,19 @@ export const AddDomain = () => {
             if (data.is_redirected && tier === 'seo') {
               setRedirectWarning("Bu domen boshqa manzilga yo'naltirilmoqda (Redirect). Redirect orqali sayt ma'lumotlarini olish faqat Pullik tarifda mavjud. Siz pullik bo'limga o'tkazildingiz.");
               setTier('paid');
-            } else if (!data.is_redirected) {
+            } else if (data.is_redirected) {
+              setRedirectWarning("Bu domen boshqa manzilga yo'naltirilmoqda. Biroq, Pullik tarifda bunga ruxsat beriladi.");
+            } else {
               setRedirectWarning('');
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error(err);
             setApiError(true);
+            setSubmitError(err.message || "Sayt mavjud emas yoki ishlamayapti");
+            setDomainOk(false);
             setCat('—');
             setDesc('—');
           }
-          const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || "Sayt mavjud emas yoki ishlamayapti");
-          }
-          const data = await res.json();
-          setCat(data.category || 'Boshqa');
-          setDesc((data.description === "Ma'lumot topilmadi" || !data.description) ? "Sayt tavsifi kiritilmagan" : data.description);
-          setUzRedirectData({
-            has: data.has_uz_redirect || false,
-            variant: data.uz_variant || ''
-          });
-          if (data.is_redirected) {
-            setRedirectWarning("Bu domen boshqa manzilga yo'naltirilmoqda. Biroq, Pullik tarifda bunga ruxsat beriladi.");
-          } else {
-            setRedirectWarning('');
-          }
-        } catch (err: any) {
-          console.error(err);
-          setApiError(true);
-          setSubmitError(err.message || "Sayt mavjud emas yoki ishlamayapti");
-          setDomainOk(false);
-          setCat('—');
-          setDesc('—');
-        }
       } else {
         setCat('—');
         setDesc('—');
