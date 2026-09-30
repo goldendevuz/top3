@@ -47,6 +47,7 @@ class DomainResponse(BaseModel):
     custom_url: Optional[str] = None
     custom_cta: Optional[str] = None
     custom_description: Optional[str] = None
+    custom_banner: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -205,11 +206,12 @@ class AddDomainRequest(BaseModel):
     custom_url: Optional[str] = None
     custom_cta: Optional[str] = None
     custom_description: Optional[str] = None
+    custom_banner: Optional[str] = None
 
 @router.post("/")
 async def add_domain(req: AddDomainRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    user_res = await db.execute(select(User).filter(User.id == req.user_id))
-    user = user_res.scalars().first()
+    user = current_user
+    req.user_id = current_user.id
     is_admin = user and user.email == "yunusovabdulmajid@gmail.com"
 
     if not req.description or req.description == "Ma'lumot topilmadi" or req.description.strip() == "":
@@ -238,6 +240,14 @@ async def add_domain(req: AddDomainRequest, background_tasks: BackgroundTasks, d
                 existing.category = req.category
             existing.owner_id = req.user_id
             existing.is_sponsored = req.is_sponsored
+            if req.custom_url:
+                existing.custom_url = req.custom_url
+            if req.custom_cta:
+                existing.custom_cta = req.custom_cta
+            if req.custom_description:
+                existing.custom_description = req.custom_description
+            if req.custom_banner:
+                existing.custom_banner = req.custom_banner
             
             if was_deleted:
                 existing.is_active = (req.board_type == "ochiq") or (req.price == 0) or is_admin
@@ -279,13 +289,18 @@ async def add_domain(req: AddDomainRequest, background_tasks: BackgroundTasks, d
         is_sponsored=req.is_sponsored,
         custom_url=req.custom_url,
         custom_cta=req.custom_cta,
-        custom_description=req.custom_description
+        custom_description=req.custom_description,
+        custom_banner=req.custom_banner
     )
     if is_admin and req.is_sponsored:
         d.sponsored_until = datetime.utcnow() + timedelta(days=7)
     db.add(d)
-    await db.commit()
-    await db.refresh(d)
+    try:
+        await db.commit()
+        await db.refresh(d)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Bu domen allaqachon qo'shilgan!")
     
     plan = "Sponsor" if req.is_sponsored else ("Ochiq" if req.board_type == "ochiq" else "Pullik")
     price_fmt = f"{d.current_price:,}".replace(",", " ") + " so'm" if d.current_price else "Bepul"
@@ -305,7 +320,13 @@ class ClickRequest(BaseModel):
     device_id: str
 
 @router.post("/{domain_id}/click")
-async def register_click(domain_id: int, req: ClickRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def register_click(
+    domain_id: int, 
+    req: ClickRequest, 
+    request: Request, 
+    db: AsyncSession = Depends(get_db),
+    optional_user: Optional[User] = Depends(get_optional_user)
+):
     res = await db.execute(select(Domain).filter(Domain.id == domain_id, Domain.is_deleted == False))
     domain = res.scalars().first()
     if not domain:
@@ -322,41 +343,52 @@ async def register_click(domain_id: int, req: ClickRequest, request: Request, db
 
     user_agent = request.headers.get("user-agent")
 
-    now = datetime.now(timezone.utc)
-    start_of_day = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+    # Strict lifetime uniqueness: 1 click per domain per IP OR Device OR Logged-in User
+    conditions = []
+    if client_ip:
+        conditions.append(DomainClick.ip_address == client_ip)
+    if req.device_id:
+        conditions.append(DomainClick.device_id == req.device_id)
+    if optional_user:
+        conditions.append(DomainClick.user_id == optional_user.id)
 
-    stmt = select(DomainClick).filter(
-        DomainClick.domain_id == domain_id,
-        DomainClick.created_at >= start_of_day,
-        or_(
-            DomainClick.device_id == req.device_id,
-            and_(
-                DomainClick.ip_address != None,
-                DomainClick.ip_address == client_ip,
-                DomainClick.user_agent == user_agent
-            )
+    existing_click = None
+    if conditions:
+        stmt = select(DomainClick).filter(
+            DomainClick.domain_id == domain_id,
+            or_(*conditions)
         )
-    )
-    click_res = await db.execute(stmt)
-    existing_click = click_res.scalars().first()
+        click_res = await db.execute(stmt)
+        existing_click = click_res.scalars().first()
     
     if not existing_click:
-        new_click = DomainClick(domain_id=domain_id, device_id=req.device_id, ip_address=client_ip, user_agent=user_agent)
+        new_click = DomainClick(
+            domain_id=domain_id, 
+            device_id=req.device_id, 
+            ip_address=client_ip, 
+            user_agent=user_agent,
+            user_id=optional_user.id if optional_user else None
+        )
         db.add(new_click)
         domain.click_count += 1
         await db.commit()
+    else:
+        # If existing record didn't have user_id and visitor is logged in now, associate user_id
+        if optional_user and not existing_click.user_id:
+            existing_click.user_id = optional_user.id
+            await db.commit()
+
     return {"status": "ok", "clicks": domain.click_count}
 
 @router.post("/{domain_id}/visit")
-async def register_visit(domain_id: int, db: AsyncSession = Depends(get_db)):
-    # Deprecated: Kept for backwards compatibility if needed
-    res = await db.execute(select(Domain).filter(Domain.id == domain_id, Domain.is_deleted == False))
-    domain = res.scalars().first()
-    if not domain:
-        raise HTTPException(status_code=404, detail="Not found")
-    domain.click_count += 1
-    await db.commit()
-    return {"status": "ok"}
+async def register_visit(
+    domain_id: int, 
+    request: Request, 
+    db: AsyncSession = Depends(get_db),
+    optional_user: Optional[User] = Depends(get_optional_user)
+):
+    dev_id = request.headers.get("x-device-id") or (request.client.host if request.client else "anon")
+    return await register_click(domain_id, ClickRequest(device_id=dev_id), request, db, optional_user)
 
 @router.delete("/{domain_id}")
 async def delete_domain(domain_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -378,6 +410,55 @@ async def delete_domain(domain_id: int, db: AsyncSession = Depends(get_db), curr
 
 class StatusUpdateRequest(BaseModel):
     status: str
+
+class TariffUpdateRequest(BaseModel):
+    tariff: str
+
+@router.put("/{domain_id}/tariff")
+async def update_domain_tariff(
+    domain_id: int, 
+    req: TariffUpdateRequest, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    is_admin = current_user.email == "yunusovabdulmajid@gmail.com"
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admin can update domain tariff")
+        
+    t = req.tariff.lower().strip()
+    if t not in ["bepul", "pullik", "sponsor"]:
+        raise HTTPException(status_code=400, detail="Invalid tariff")
+        
+    res = await db.execute(select(Domain).filter(Domain.id == domain_id))
+    domain = res.scalars().first()
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domain not found")
+        
+    if t == "sponsor":
+        domain.is_sponsored = True
+        domain.sponsored_until = datetime.now(timezone.utc) + timedelta(days=30)
+        if not domain.current_price or domain.current_price < 5000:
+            domain.current_price = 5000
+    elif t == "pullik":
+        domain.is_sponsored = False
+        domain.sponsored_until = None
+        domain.board_type = BoardType.umumiy
+        if not domain.current_price or domain.current_price == 0:
+            domain.current_price = 1000
+    elif t == "bepul":
+        domain.is_sponsored = False
+        domain.sponsored_until = None
+        domain.current_price = 0
+        domain.board_type = BoardType.ochiq
+        
+    await db.commit()
+    return {
+        "message": "Tariff updated successfully", 
+        "tariff": t,
+        "is_sponsored": domain.is_sponsored,
+        "current_price": domain.current_price
+    }
+
 
 @router.put("/{domain_id}/status")
 async def update_domain_status(domain_id: int, req: StatusUpdateRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -426,3 +507,71 @@ async def refresh_domain_seo(domain_id: int, db: AsyncSession = Depends(get_db),
     await db.commit()
     await db.refresh(domain)
     return {"message": "SEO refreshed successfully", "domain": domain.name}
+
+
+@router.get("/{domain_id}/clicks-history")
+async def get_domain_clicks_history(domain_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    res = await db.execute(select(Domain).filter(Domain.id == domain_id))
+    domain = res.scalars().first()
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domain not found")
+        
+    is_admin = current_user.email and current_user.email.lower() == "yunusovabdulmajid@gmail.com"
+    if not is_admin and domain.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Ruxsat berilmagan")
+        
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(DomainClick)
+        .options(selectinload(DomainClick.user))
+        .filter(DomainClick.domain_id == domain_id)
+        .order_by(DomainClick.created_at.asc())
+    )
+    clicks_res = await db.execute(stmt)
+    clicks = clicks_res.scalars().all()
+    
+    return [
+        {
+            "id": c.id,
+            "ip_address": c.ip_address or "Aniqlanmagan",
+            "device_id": c.device_id,
+            "user_agent": c.user_agent or "—",
+            "user_id": c.user_id,
+            "user_email": c.user.email if c.user else None,
+            "created_at": c.created_at.strftime("%Y-%m-%d %H:%M:%S") if c.created_at else "—"
+        }
+        for c in clicks
+    ]
+
+class OwnerUpdateRequest(BaseModel):
+    user_id: int
+
+@router.put("/{domain_id}/owner")
+async def update_domain_owner(
+    domain_id: int, 
+    req: OwnerUpdateRequest, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    is_admin = current_user.email and current_user.email.lower() == "yunusovabdulmajid@gmail.com"
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Faqat admin domen egasini almashtira oladi")
+        
+    res = await db.execute(select(Domain).filter(Domain.id == domain_id))
+    domain = res.scalars().first()
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domen topilmadi")
+        
+    user_res = await db.execute(select(User).filter(User.id == req.user_id))
+    new_owner = user_res.scalars().first()
+    if not new_owner:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+        
+    domain.owner_id = new_owner.id
+    await db.commit()
+    return {
+        "status": "ok", 
+        "message": f"Domen egasi {new_owner.email} ga almashtirildi",
+        "owner_id": new_owner.id,
+        "owner_email": new_owner.email
+    }

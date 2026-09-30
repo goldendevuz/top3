@@ -41,7 +41,6 @@ async def get_inpay_bearer():
 
 class InitPaymentRequest(BaseModel):
     domain_id: int
-    amount: int
     user_id: int  # For now since we don't have auth middleware
 
 @router.post("/init")
@@ -57,14 +56,19 @@ async def init_payment(req: InitPaymentRequest, db: AsyncSession = Depends(get_d
     if user and user.email == "yunusovabdulmajid@gmail.com":
         return {"order_id": "admin_bypass", "pay_url": ""}
 
+    payment_amount = domain.current_price
+    if payment_amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid payment amount for this domain")
+
     bearer = await get_inpay_bearer()
     
     payload = {
         "merchant_id": INPAY_MERCHANT_ID,
-        "amount": req.amount,
+        "token": INPAY_MERCHANT_TOKEN,
+        "amount": payment_amount,
         "callback_url": INPAY_CALLBACK_URL,
         "return_url": INPAY_RETURN_URL,
-        "description": f"Payment for domain {domain.name}"
+        "description": f"{domain.name} uchun to'lov"
     }
     
     headers = {"Authorization": f"Bearer {bearer}"}
@@ -83,11 +87,16 @@ async def init_payment(req: InitPaymentRequest, db: AsyncSession = Depends(get_d
         tx = Transaction(
             user_id=req.user_id,
             domain_id=domain.id,
-            amount=req.amount,
+            amount=payment_amount,
             status=TransactionStatus.pending,
             inpay_order_id=order_id
         )
         db.add(tx)
+        
+        # Pullik domenni tasdiqlanmagan holda yashirish:
+        domain.is_active = False 
+        domain.status = "pending_payment"
+        
         await db.commit()
         await db.refresh(tx)
         
@@ -142,4 +151,4 @@ async def payment_webhook(payload: dict, background_tasks: BackgroundTasks):
 
 @router.get("/return")
 async def payment_return():
-    return RedirectResponse(url="http://localhost:5173/payment/status")
+    return RedirectResponse(url="https://top3.uz/")
