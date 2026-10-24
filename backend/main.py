@@ -265,3 +265,21 @@ async def toggle_demo(db: AsyncSession = Depends(get_db), current_user: User = D
     await db.commit()
     state = "O'chirilgan (yashiringan)" if new_status else "Yoqilgan (ko'rsatilgan)"
     return {"status": "ok", "message": f"Demo saytlar holati: {state}."}
+
+@app.get("/api/admin/users")
+async def get_admin_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    is_admin = current_user.email and current_user.email.lower() == "yunusovabdulmajid@gmail.com"
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    res = await db.execute(select(User).order_by(User.id))
+    users = res.scalars().all()
+    return [
+        {
+            "id": u.id,
+            "email": u.email,
+            "telegram_id": u.telegram_id,
+            "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if u.created_at else None
+        }
+        for u in users
+    ]

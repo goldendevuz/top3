@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, or_, and_
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timedelta, timezone
 from app.database import get_db
 from app.models import Domain, BoardType, User, Transaction, TransactionStatus, DomainClick
 from app.dependencies import get_current_user, get_optional_user

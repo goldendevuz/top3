@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
@@ -11,6 +11,20 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, login: storeLogin, logout: storeLogout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleHomeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (window.location.pathname === '/') {
+      if (window.location.hash) {
+        window.history.pushState(null, '', '/');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate('/');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  };
 
   const handleLogout = () => {
     storeLogout();
@@ -43,12 +57,12 @@ const Header = () => {
   return (
     <header className={`site ${scrolled ? 'bg-[#0A0E1D] border-b border-zinc-800 shadow-lg shadow-indigo-500/20 scrolled' : 'bg-transparent border-transparent'}`} id="siteHeader" style={{ transition: 'all 0.3s' }}>
       <div className="wrap nav">
-        <Link to="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+        <Link to="/" onClick={handleHomeClick} className="brand" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
           <img src={logo} alt="Top3 Logo" style={{ height: '32px', objectFit: 'contain' }} />
           <span>Top3</span>
         </Link>
         <nav className="navlinks">
-          <Link to="/">Asosiy</Link>
+          <Link to="/" onClick={handleHomeClick}>Asosiy</Link>
           <Link to="/daily">Kunlik</Link>
           {window.location.pathname === '/' && (
             <>

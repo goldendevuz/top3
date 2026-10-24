@@ -22,7 +22,7 @@ const Hero = () => {
   const { domains } = useBoardStore();
   
   const organicPaid = domains
-    .filter((d: any) => d.type === 'umumiy' && d.isPaid && !d.is_sponsored)
+    .filter((d: any) => d.type === 'umumiy' && (d.isPaid || d.is_sponsored))
     .sort((a: any, b: any) => (b.price || 0) - (a.price || 0));
   const organicFree = domains
     .filter((d: any) => (!d.isPaid && !d.is_sponsored) && (d.type === 'umumiy' || d.type === 'ochiq'))
@@ -32,10 +32,10 @@ const Hero = () => {
   const top3 = top3Data;
   
   const dailyPaid = domains
-    .filter((d: any) => d.type === 'bugun' && d.isPaid && !d.is_sponsored)
+    .filter((d: any) => (d.type === 'bugun' || d.addedToday) && (d.isPaid || d.is_sponsored))
     .sort((a: any, b: any) => (b.price || 0) - (a.price || 0));
   const dailyFree = domains
-    .filter((d: any) => (!d.isPaid && !d.is_sponsored) && (d.type === 'bugun'))
+    .filter((d: any) => (!d.isPaid && !d.is_sponsored) && d.addedToday)
     .sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0) || a.addedAt - b.addedAt);
   
   const top3DailyData = [...dailyPaid, ...dailyFree].slice(0, 3);

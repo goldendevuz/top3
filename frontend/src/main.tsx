@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { HelmetProvider } from 'react-helmet-async'
+if ((window as any).Telegram && (window as any).Telegram.WebApp) { (window as any).Telegram.WebApp.ready(); }
+
 import App from './App.tsx'
 import './index.css'
 import axios from 'axios'

@@ -44,3 +44,14 @@ yarn-error.log*
 .vscode/
 .idea/
 *.log
+dist/
+*_remote.*
+*_conflict.*
+patch*.py
+update_*.py
+add_clicks_history.py
+test_*.js
+*.db
+backend/app/routers/rung_payments_temp.py
+frontend/index_prod.html
+frontend/src/components/replace_favicon.js

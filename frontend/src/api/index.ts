@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: 'https://top3.uz/api',
 });
 
 // Intercept requests to attach the token if available

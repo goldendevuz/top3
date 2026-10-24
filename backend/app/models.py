@@ -47,6 +47,7 @@ class Domain(Base):
     custom_url = Column(String, nullable=True)
     custom_cta = Column(String, nullable=True)
     custom_description = Column(String, nullable=True)
+    custom_banner = Column(String, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -63,9 +64,11 @@ class DomainClick(Base):
     device_id = Column(String, index=True, nullable=False)
     ip_address = Column(String, index=True, nullable=True)
     user_agent = Column(String, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     domain = relationship("Domain", back_populates="clicks")
+    user = relationship("User")
 
 class Transaction(Base):
     __tablename__ = "transactions"

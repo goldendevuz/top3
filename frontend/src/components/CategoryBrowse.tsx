@@ -13,7 +13,7 @@ const CategoryBrowse = () => {
   }));
 
   return (
-    <section className="wrap" style={{ paddingTop: '56px', paddingBottom: '56px' }}>
+    <section className="wrap">
       {/* Section header */}
       <div className="section-head reveal in" style={{ marginBottom: '28px' }}>
         <div>

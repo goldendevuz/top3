@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import httpx
@@ -10,6 +10,7 @@ from app.database import AsyncSessionLocal, get_db
 from app.models import User, Domain, Transaction
 from app.dependencies import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.notifier import notify_new_user_registration
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -22,7 +23,7 @@ class TelegramLoginRequest(BaseModel):
     username: str = None
 
 @router.post("/telegram")
-async def telegram_login(req: TelegramLoginRequest):
+async def telegram_login(req: TelegramLoginRequest, request: Request):
     google_id = f"telegram_{req.id}"
     email = f"{req.username or req.id}@telegram.me"
     name = req.first_name
@@ -37,6 +38,14 @@ async def telegram_login(req: TelegramLoginRequest):
             db.add(user)
             await db.commit()
             await db.refresh(user)
+            
+            forwarded = request.headers.get("x-forwarded-for")
+            ip = forwarded.split(',')[0].strip() if forwarded else (request.headers.get("x-real-ip") or (request.client.host if request.client else "Aniqlanmagan"))
+            ua = request.headers.get("user-agent", "—")
+            try:
+                await notify_new_user_registration(email=email, ip_address=ip, user_agent=ua)
+            except Exception as e:
+                print("Notification error:", e)
         elif not user.telegram_id:
             user.telegram_id = str(req.id)
             await db.commit()
@@ -53,7 +62,7 @@ async def telegram_login(req: TelegramLoginRequest):
         }
 
 @router.post("/google")
-async def google_login(req: GoogleLoginRequest):
+async def google_login(req: GoogleLoginRequest, request: Request):
     async with httpx.AsyncClient() as client:
         res = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -79,14 +88,25 @@ async def google_login(req: GoogleLoginRequest):
         result = await db.execute(stmt)
         user = result.scalars().first()
         
+        is_new_user = False
         if not user:
             user = User(google_id=google_id, email=email)
             db.add(user)
+            is_new_user = True
         
         # Always issue a new backend token
         user.auth_token = _secrets.token_urlsafe(32)
         await db.commit()
         await db.refresh(user)
+
+        if is_new_user:
+            forwarded = request.headers.get("x-forwarded-for")
+            ip = forwarded.split(',')[0].strip() if forwarded else (request.headers.get("x-real-ip") or (request.client.host if request.client else "Aniqlanmagan"))
+            ua = request.headers.get("user-agent", "—")
+            try:
+                await notify_new_user_registration(email=email, ip_address=ip, user_agent=ua)
+            except Exception as e:
+                print("Notification error:", e)
             
         return {
             "token": user.auth_token,

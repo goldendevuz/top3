@@ -1,7 +1,8 @@
 import os
+import asyncio
 import httpx
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,24 +42,33 @@ async def get_inpay_bearer():
 
 class InitPaymentRequest(BaseModel):
     domain_id: int
-    user_id: int  # For now since we don't have auth middleware
+    user_id: Optional[int] = None  # Authenticated identity is authoritative.
+
+
+def payment_description(domain: Domain) -> str:
+    """Human-readable service name shown on the inPAY checkout page."""
+    if domain.is_sponsored:
+        return f"Top3.uz platformasida {domain.name} domenini 7 kun Sponsor o'rniga joylashtirish xizmati"
+    board_type = getattr(domain.board_type, "value", domain.board_type)
+    if board_type == "bugun":
+        return f"Top3.uz platformasida {domain.name} domenini Kunlik reytingga joylashtirish xizmati"
+    return f"Top3.uz platformasida {domain.name} domenini Umumiy reytingga joylashtirish xizmati"
 
 @router.post("/init")
-async def init_payment(req: InitPaymentRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def init_payment(req: InitPaymentRequest, request: Request, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     res = await db.execute(select(Domain).filter(Domain.id == req.domain_id))
     domain = res.scalars().first()
-    if not domain:
+    if not domain or domain.is_deleted:
         raise HTTPException(status_code=404, detail="Domain not found")
 
-    from app.models import User
-    user_res = await db.execute(select(User).filter(User.id == current_user.id))
-    user = user_res.scalars().first()
-    if user and user.email == "yunusovabdulmajid@gmail.com":
-        return {"order_id": "admin_bypass", "pay_url": ""}
+    if domain.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed to pay for this domain")
+    if domain.is_active:
+        raise HTTPException(status_code=409, detail="Domain is already active")
 
     payment_amount = domain.current_price
-    if payment_amount <= 0:
-        raise HTTPException(status_code=400, detail="Invalid payment amount for this domain")
+    if payment_amount < 1000:
+        raise HTTPException(status_code=400, detail="Payment amount must be at least 1,000 UZS")
 
     bearer = await get_inpay_bearer()
     
@@ -68,12 +78,12 @@ async def init_payment(req: InitPaymentRequest, db: AsyncSession = Depends(get_d
         "amount": payment_amount,
         "callback_url": INPAY_CALLBACK_URL,
         "return_url": INPAY_RETURN_URL,
-        "description": f"{domain.name} uchun to'lov"
+        "description": payment_description(domain),
     }
     
-    headers = {"Authorization": f"Bearer {bearer}"}
+    headers = {"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"}
     
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=20.0) as client:
         res = await client.post("https://inpay.uz/api/v1/create/", json=payload, headers=headers)
         if res.status_code != 200:
             raise HTTPException(status_code=400, detail="InPay create order failed")
@@ -85,7 +95,7 @@ async def init_payment(req: InitPaymentRequest, db: AsyncSession = Depends(get_d
         pay_url = data.get("pay_url")
         
         tx = Transaction(
-            user_id=req.user_id,
+            user_id=current_user.id,
             domain_id=domain.id,
             amount=payment_amount,
             status=TransactionStatus.pending,
@@ -117,14 +127,16 @@ async def verify_payment_status(order_id: str):
             res = await client.get(url, headers=headers)
             if res.status_code == 200:
                 data = res.json()
-                if data.get("success") == True and data.get("data", {}).get("status") == "paid":
+                verified_status = str(data.get("status", "")).lower()
+                verified_amount = data.get("amount")
+                if data.get("success") == True and verified_status == "success":
                     # Update DB
                     from app.database import AsyncSessionLocal
                     from app.routers.domains import send_telegram_message
                     async with AsyncSessionLocal() as db:
                         res = await db.execute(select(Transaction).filter(Transaction.inpay_order_id == order_id))
                         tx = res.scalars().first()
-                        if tx and tx.status != TransactionStatus.paid:
+                        if tx and tx.status != TransactionStatus.paid and str(verified_amount) == str(tx.amount):
                             tx.status = TransactionStatus.paid
                             # Need to load domain since it's lazy
                             res_dom = await db.execute(select(Domain).filter(Domain.id == tx.domain_id))
@@ -148,6 +160,18 @@ async def payment_webhook(payload: dict, background_tasks: BackgroundTasks):
     if order_id:
         background_tasks.add_task(verify_payment_status, order_id)
     return {"status": "ok"}
+
+@router.get("/status/{domain_id}")
+async def payment_status(domain_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    res = await db.execute(select(Transaction).filter(Transaction.domain_id == domain_id, Transaction.user_id == current_user.id).order_by(Transaction.created_at.desc()))
+    tx = res.scalars().first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if tx.status == TransactionStatus.pending and tx.inpay_order_id:
+        await verify_payment_status(tx.inpay_order_id)
+        await db.refresh(tx)
+    domain = await db.get(Domain, domain_id)
+    return {"status": tx.status.value, "is_active": bool(domain and domain.is_active), "order_id": tx.inpay_order_id}
 
 @router.get("/return")
 async def payment_return():

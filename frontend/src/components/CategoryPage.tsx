@@ -1,12 +1,20 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useBoardStore, DomainItem } from '../store/useBoardStore';
 import { categoryConfig } from './Categories';
+import { getDomainLogoUrl, handleLogoError } from '../utils';
 
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 const CategoryPage = () => {
   const { name } = useParams<{ name: string }>();
-  const { domains } = useBoardStore();
+  const navigate = useNavigate();
+  const { domains, registerVisit } = useBoardStore();
+
+  const buildUtmUrl = (domain: string) => {
+    const base = domain.startsWith('http') ? domain : `https://${domain}`;
+    const params = `utm_source=top3.uz&utm_medium=directory&utm_campaign=top3_referral`;
+    return base.includes('?') ? `${base}&${params}` : `${base}?${params}`;
+  };
 
   const categoryName = name ? decodeURIComponent(name) : '';
   const cfg = categoryConfig[categoryName];
@@ -21,7 +29,7 @@ const CategoryPage = () => {
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', paddingBottom: '80px' }}>
-      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '64px 24px 0' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 24px 0' }}>
 
         {/* Breadcrumb */}
         <div style={{ marginBottom: '32px' }}>
@@ -94,18 +102,15 @@ const CategoryPage = () => {
               else if (rank === 3) rankColor = '#b45309';
 
               return (
-                <a
+                <div
                   key={d.id}
-                  href={d.custom_url || `https://${d.dom}?utm_source=top3.uz`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   style={{
+                    position: 'relative',
                     display: 'flex', alignItems: 'center', gap: '16px',
                     padding: '16px 20px',
                     background: 'var(--surface)',
                     border: '1px solid var(--border)',
                     borderRadius: '14px',
-                    textDecoration: 'none',
                     transition: 'transform .2s, box-shadow .2s',
                   }}
                   onMouseEnter={e => {
@@ -119,6 +124,15 @@ const CategoryPage = () => {
                     (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
                   }}
                 >
+                  <a
+                    href={d.custom_url || buildUtmUrl(d.dom)}
+                    onClick={() => d.id && registerVisit(d.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '14px' }}
+                    aria-label={`Go to ${d.dom}`}
+                  />
+
                   {/* Rank */}
                   <div style={{
                     width: '28px', textAlign: 'center', flexShrink: 0,
@@ -130,11 +144,11 @@ const CategoryPage = () => {
 
                   {/* Favicon */}
                   <img
-                    src={`https://www.google.com/s2/favicons?domain=${d.dom}&sz=32`}
+                    src={getDomainLogoUrl(d.dom, 64)} onError={(e) => handleLogoError(e, d.dom)}
                     alt=""
                     width={24} height={24}
                     style={{ borderRadius: '6px', flexShrink: 0 }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    
                   />
 
                   {/* Info */}
@@ -147,10 +161,22 @@ const CategoryPage = () => {
                     </div>
                     {d.desc && (
                       <div style={{
-                        fontSize: '12.5px', color: 'var(--muted)', marginTop: '2px',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                        fontSize: '12.5px', color: 'var(--muted)', marginTop: '2px'
                       }}>
-                        {d.desc}
+                        <span style={{
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0%', minWidth: 0
+                        }}>
+                          {d.desc}
+                        </span>
+                        <Link 
+                          to={`/site/${d.dom.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0]}`}
+                          style={{
+                            color: 'var(--indigo-400, #818cf8)', fontWeight: 500, flexShrink: 0, position: 'relative', zIndex: 10
+                          }}
+                        >
+                          batafsil
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -189,7 +215,7 @@ const CategoryPage = () => {
                       SPONSOR
                     </span>
                   )}
-                </a>
+                </div>
               );
             })}
           </div>

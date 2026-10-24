@@ -32,7 +32,7 @@ export const AddFreeDomain = () => {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await axios.post('http://localhost:8000/api/auth/google', {
+        const res = await axios.post('/api/auth/google', {
           access_token: tokenResponse.access_token
         });
         useAuthStore.getState().login(res.data, tokenResponse.access_token);
@@ -84,7 +84,7 @@ export const AddFreeDomain = () => {
             const user = JSON.parse(userStr);
             headers['x-user-id'] = user.id.toString();
           }
-          const res = await fetch(`http://localhost:8000/api/seo/fetch?domain=${target}`, { headers });
+          const res = await fetch(`/api/seo/fetch?domain=${target}`, { headers });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
             throw new Error(errData.detail || "Sayt mavjud emas yoki ishlamayapti");
@@ -143,7 +143,7 @@ export const AddFreeDomain = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/domains/', {
+      const res = await fetch('/api/domains/', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

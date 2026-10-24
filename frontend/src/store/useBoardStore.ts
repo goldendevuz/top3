@@ -22,6 +22,8 @@ export interface DomainItem {
   custom_cta?: string;
   custom_description?: string;
   custom_banner?: string;
+  is_demo?: boolean;
+  is_deleted?: boolean;
 }
 
 interface BoardStore {
@@ -79,7 +81,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
           cat: d.category || 'Boshqa',
           price: d.current_price,
           clicks: d.click_count,
-          addedToday: new Date(d.created_at).toDateString() === new Date().toDateString(),
+          addedToday: (Date.now() - new Date(d.created_at).getTime()) <= 24 * 60 * 60 * 1000,
           addedAt: new Date(d.created_at).getTime(),
           seo: d.board_type === 'ochiq',
           type: d.board_type,
@@ -97,21 +99,49 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     }
   },
   simulateClick: () => {
-    const { domains, registerVisit } = get();
-    const freeDomains = domains.filter(d => !d.isPaid && d.type !== 'bugun');
-    if (freeDomains.length > 0) {
-      const pick = freeDomains[Math.floor(Math.random() * freeDomains.length)];
-      if (pick.id) registerVisit(pick.id);
-    }
+    // Disabled to prevent non-unique inflation
   },
   registerVisit: async (dom_id: number) => {
+    const visitedKey = `top3_clicked_${dom_id}`;
+    if (localStorage.getItem(visitedKey)) {
+      return; // Already registered visit from this browser forever
+    }
+    
+    let deviceId = localStorage.getItem('top3_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('top3_device_id', deviceId);
+    }
+
+    localStorage.setItem(visitedKey, 'true');
+
     set(state => ({
       domains: state.domains.map(d =>
         d.id === dom_id && d.clicks !== undefined ? { ...d, clicks: d.clicks + 1 } : d
       )
     }));
     try {
-      await axios.post(`${backendUrl}/api/domains/${dom_id}/visit`);
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('top3_user');
+      let userId = '';
+      if (userStr) {
+        try { userId = JSON.parse(userStr)?.id?.toString() || ''; } catch(e){}
+      }
+
+      const res = await axios.post(`${backendUrl}/api/domains/${dom_id}/click`, { device_id: deviceId }, {
+        headers: { 
+          'x-device-id': deviceId,
+          ...(userId ? { 'x-user-id': userId } : {}),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (res.data && typeof res.data.clicks === 'number') {
+        set(state => ({
+          domains: state.domains.map(d =>
+            d.id === dom_id ? { ...d, clicks: res.data.clicks } : d
+          )
+        }));
+      }
     } catch(err) {
       console.error('Failed to register visit', err);
     }

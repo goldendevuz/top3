@@ -15,6 +15,7 @@ import Profile from './components/Profile';
 import Categories from './components/Categories';
 import CategoryPage from './components/CategoryPage';
 import CategoryBrowse from './components/CategoryBrowse';
+import SitePage from './components/SitePage';
 import { useAuthStore } from './store/useAuthStore';
 import ScrollToTop from './components/ScrollToTop';
 import RouteProgressBar from './components/RouteProgressBar';
@@ -261,8 +262,10 @@ function App() {
           <Route path="/add-free" element={<AddFreePage />} />
           <Route path="/sponsor" element={<SponsorPage />} />
           <Route path="/daily" element={<DailyPage />} />
+          <Route path="/daily/:date" element={<DailyPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/category/:name" element={<CategoryDetailPage />} />
+          <Route path="/site/:domain" element={<SitePage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </BrowserRouter>

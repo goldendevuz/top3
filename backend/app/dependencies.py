@@ -1,5 +1,6 @@
 import httpx
-from fastapi import Depends, HTTPException, status
+from typing import Optional
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -9,10 +10,32 @@ from app.models import User
 
 security = HTTPBearer(auto_error=False)
 
-async def get_optional_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncSession = Depends(get_db)):
-    if not credentials:
+async def get_optional_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security), 
+    db: AsyncSession = Depends(get_db)
+):
+    token = None
+    if credentials:
+        token = credentials.credentials
+    if not token:
+        auth_hdr = request.headers.get("Authorization") or request.headers.get("authorization")
+        if auth_hdr:
+            if auth_hdr.lower().startswith("bearer "):
+                token = auth_hdr.split(" ", 1)[1].strip()
+            else:
+                token = auth_hdr.strip()
+    if not token:
+        token = request.headers.get("X-Auth-Token")
+
+    if not token:
+        x_user_id = request.headers.get("X-User-Id")
+        if x_user_id and x_user_id.isdigit():
+            stmt = select(User).where(User.id == int(x_user_id))
+            result = await db.execute(stmt)
+            return result.scalars().first()
         return None
-    token = credentials.credentials
+
     try:
         if token.startswith("tg_"):
             tg_id_number = token.replace("tg_", "")

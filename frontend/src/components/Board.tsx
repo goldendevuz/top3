@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useBoardStore, DomainItem } from '../store/useBoardStore';
+import { getDomainLogoUrl, handleLogoError } from '../utils';
 
 
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -20,11 +21,7 @@ const backendUrl = "";
 /* ─── Domain Row (organic ranking card) ─── */
 const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
   const [pulseActive, setPulseActive] = useState(true);
-  const [localClicks, setLocalClicks] = useState(item.clicks || 0);
-
-  useEffect(() => {
-    setLocalClicks(prev => Math.max(item.clicks || 0, prev));
-  }, [item.clicks]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => setPulseActive(false), 4000);
@@ -42,50 +39,46 @@ const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
     return base.includes('?') ? `${base}&${params}` : `${base}?${params}`;
   };
 
-  const handleLinkClick = (id: number) => {
-    const clickedKey = `clicked_${id}`;
-    if (sessionStorage.getItem(clickedKey)) return;
-    sessionStorage.setItem(clickedKey, 'true');
+  const { registerVisit } = useBoardStore();
 
-    setLocalClicks(prev => prev + 1);
-    let deviceId = localStorage.getItem('device_id');
-    if (!deviceId) {
-      deviceId = crypto.randomUUID();
-      localStorage.setItem('device_id', deviceId);
-    }
-    fetch(`${backendUrl}/api/domains/${id}/click`, { 
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ device_id: deviceId })
-    }).catch(() => {});
+  const handleLinkClick = (id: number) => {
+    registerVisit(id);
   };
 
   return (
-    <a 
-      href={buildUtmUrl(item.dom)} 
-      target="_blank" 
-      rel="noopener noreferrer dofollow"
-      onClick={() => handleLinkClick(item.id!)}
-      className="flex items-center justify-between p-4 border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80 transition-colors rounded-xl mb-3"
+    <div 
+      className="flex items-center justify-between p-4 border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/80 transition-colors rounded-xl mb-3 relative group"
     >
+      <a
+        href={buildUtmUrl(item.dom)}
+        target="_blank"
+        rel="noopener noreferrer dofollow"
+        onClick={() => handleLinkClick(item.id!)}
+        className="absolute inset-0 z-0 rounded-xl"
+        aria-label={`Go to ${item.dom}`}
+      />
       {/* 1. CHAP QISM: Raqam, Logo va Matnlar */}
       <div className="flex items-center gap-4 min-w-0 flex-1">
         <div className={`text-2xl sm:text-3xl font-black italic min-w-[2rem] sm:min-w-[2.5rem] text-center ${rankColor}`}>
           #{rank}
         </div>
         
-        <img 
-          src={`https://www.google.com/s2/favicons?domain=${cleanUrlDisplay(item.dom)}&sz=64`} 
-          alt="favicon" 
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-800 border border-zinc-700 p-1.5 object-contain shrink-0"
-        />
+        <img src={getDomainLogoUrl(cleanUrlDisplay(item.dom), 128)} alt="logo" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-800 border border-zinc-700 p-1.5 object-contain shrink-0" onError={(e) => handleLogoError(e, cleanUrlDisplay(item.dom))} />
         
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <h3 className="text-base sm:text-lg font-bold text-white truncate">{cleanUrlDisplay(item.dom)}</h3>
             <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 truncate">{item.cat || "Boshqa"}</span>
           </div>
-          <p className="text-xs text-zinc-400 truncate max-w-[150px] sm:max-w-md">{item.desc}</p>
+          <div className="flex items-center gap-1 max-w-[150px] sm:max-w-md text-xs text-zinc-400 relative z-10">
+            <span className="truncate flex-1 min-w-0">{item.desc}</span>
+            <Link 
+              to={`/site/${cleanUrlDisplay(item.dom)}`}
+              className="text-indigo-400 hover:text-indigo-300 font-medium whitespace-nowrap shrink-0"
+            >
+              batafsil
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -101,7 +94,7 @@ const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
             </>
           ) : null}
           <span className="text-xs text-zinc-400 mt-0.5">
-            {fmt(localClicks)} <span className="text-zinc-500">o'tish</span>
+            {fmt(item.clicks || 0)} <span className="text-zinc-500">o'tish</span>
           </span>
         </div>
         
@@ -113,7 +106,7 @@ const DomainRow = ({ item, rank }: { item: DomainItem, rank: number }) => {
           O'tish →
         </div>
       </div>
-    </a>
+    </div>
   );
 };
 
@@ -130,32 +123,14 @@ export const SponsorRow = ({ sponsors, startIndex = 0 }: { sponsors: DomainItem[
   }, [sponsors.length]);
 
   const sponsor = sponsors[currentIndex];
-  const [clicksMap, setClicksMap] = useState<Record<number, number>>({});
-
-  useEffect(() => {
-    if (sponsor) {
-      setClicksMap(prev => ({ ...prev, [sponsor.id!]: Math.max(sponsor.clicks || 0, prev[sponsor.id!] || 0) }));
-    }
-  }, [sponsor]);
 
   if (!sponsor) return null;
 
+  const { registerVisit } = useBoardStore();
   const handleSponsorClick = () => {
-    const clickedKey = `clicked_${sponsor.id}`;
-    if (sessionStorage.getItem(clickedKey)) return;
-    sessionStorage.setItem(clickedKey, 'true');
-
-    setClicksMap(prev => ({ ...prev, [sponsor.id!]: (prev[sponsor.id!] || 0) + 1 }));
-    let deviceId = localStorage.getItem('device_id');
-    if (!deviceId) {
-      deviceId = crypto.randomUUID();
-      localStorage.setItem('device_id', deviceId);
+    if (sponsor.id) {
+      registerVisit(sponsor.id);
     }
-    fetch(`${backendUrl}/api/domains/${sponsor.id}/click`, { 
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ device_id: deviceId })
-    }).catch(() => {});
   };
 
   const base = sponsor.dom.startsWith('http') ? sponsor.dom : `https://${sponsor.dom}`;
@@ -195,7 +170,7 @@ export const SponsorRow = ({ sponsors, startIndex = 0 }: { sponsors: DomainItem[
               </div>
             )}
             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded border border-white/10 flex items-center gap-2">
-               <img src={`https://www.google.com/s2/favicons?domain=${cleanUrlDisplay(sponsor.dom)}&sz=32`} className="w-4 h-4" />
+               <img src={getDomainLogoUrl(cleanUrlDisplay(sponsor.dom), 64)} className="w-4 h-4 object-contain rounded" onError={(e) => handleLogoError(e, cleanUrlDisplay(sponsor.dom))} />
                <span className="text-white text-xs font-bold">{cleanUrlDisplay(sponsor.dom)}</span>
             </div>
           </div>
@@ -204,11 +179,7 @@ export const SponsorRow = ({ sponsors, startIndex = 0 }: { sponsors: DomainItem[
           <div className="flex items-center justify-between p-4">
             {/* 1. CHAP QISM: Logo va Matn */}
             <div className="flex items-center gap-4 min-w-0 flex-1">
-              <img 
-                src={`https://www.google.com/s2/favicons?domain=${cleanUrlDisplay(sponsor.dom)}&sz=64`} 
-                alt="sponsor" 
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 p-1.5 object-contain shrink-0 group-hover:scale-105 transition-transform"
-              />
+              <img src={getDomainLogoUrl(cleanUrlDisplay(sponsor.dom), 128)} alt="sponsor" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 p-1.5 object-contain shrink-0 group-hover:scale-105 transition-transform" onError={(e) => handleLogoError(e, cleanUrlDisplay(sponsor.dom))} />
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <h3 className="text-base sm:text-lg font-bold text-amber-100 truncate">{cleanUrlDisplay(sponsor.dom)}</h3>
@@ -222,7 +193,7 @@ export const SponsorRow = ({ sponsors, startIndex = 0 }: { sponsors: DomainItem[
             <div className="flex items-center gap-4 shrink-0 pl-2">
               <div className="flex flex-col items-end">
                 <span className="text-xs text-amber-300/60 mt-0.5">
-                  {fmt(clicksMap[sponsor.id!] ?? (sponsor.clicks || 0))} <span className="text-amber-500/50">o'tish</span>
+                  {fmt(sponsor.clicks || 0)} <span className="text-amber-500/50">o'tish</span>
                 </span>
               </div>
               <div className="hidden sm:flex bg-amber-500 text-amber-950 rounded-lg px-4 py-2 text-xs font-bold group-hover:bg-amber-400 transition-colors">
@@ -383,14 +354,22 @@ const Board = () => {
   // Build interleaved list
   const buildList = useCallback((listItems: DomainItem[], sponsorOffset: number) => {
     const elements: JSX.Element[] = [];
-    let rank = 0;
     let sponsorCount = sponsorOffset;
 
     listItems.forEach((item, idx) => {
-      rank++;
+      elements.push(
+        <div 
+          key={item.id} 
+          className="animate-fadeInUp"
+          style={{ animationDelay: `${(idx % 10) * 0.04}s`, animationFillMode: 'both' }}
+        >
+          <DomainRow item={item} rank={idx + 1} />
+        </div>
+      );
 
-      // Insert SponsorRow periodically (e.g. rank 4, 13, 23, 33...)
-      if ((rank === 4 || (rank > 10 && rank % 10 === 3)) && sponsors.length > 0) {
+      // Insert SponsorRow after the 3rd item (idx 2), then every 10 items
+      const shouldInsertSponsor = (idx === 2) || (idx > 2 && (idx - 2) % 10 === 0);
+      if (shouldInsertSponsor && sponsors.length > 0) {
         const offset = sponsorCount;
         sponsorCount++;
         elements.push(
@@ -399,21 +378,10 @@ const Board = () => {
           </div>
         );
       }
-
-
-      elements.push(
-        <div 
-          key={item.id} 
-          className="animate-fadeInUp"
-          style={{ animationDelay: `${(idx % 10) * 0.04}s`, animationFillMode: 'both' }}
-        >
-          <DomainRow item={item} rank={rank} />
-        </div>
-      );
     });
 
     // Add Sponsor CTA at the end of the list
-    if (listItems.length > 0) {
+    if (listItems.length > 0 || sponsors.length > 0) {
       elements.push(
         <div key="sponsor-cta" className="animate-fadeInUp mt-6" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
           <SponsorCTA />
@@ -438,7 +406,7 @@ const Board = () => {
           </div>
           {loading ? (
              <><SkeletonRow /><SkeletonRow /><SkeletonRow /></>
-          ) : organic.length === 0 ? (
+          ) : (organic.length === 0 && sponsors.length === 0) ? (
              <div className="text-center py-10 text-slate-500">Hozircha saytlar yo'q</div>
           ) : buildList(displayedOrganic, 0)}
           
@@ -464,7 +432,7 @@ const Board = () => {
           </div>
           {loading ? (
              <><SkeletonRow /><SkeletonRow /></>
-          ) : bugun.length === 0 ? (
+          ) : (bugun.length === 0 && sponsors.length === 0) ? (
              <div className="text-center py-10 text-slate-500">Bugun saytlar qo'shilmadi</div>
           ) : buildList(displayedBugun, 1)}
 

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://top3.uz/sitemap.xml
